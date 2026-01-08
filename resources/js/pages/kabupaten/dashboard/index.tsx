@@ -7,7 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { formatCurrency } from '@/utils/formatRupiah';
 import { Head, usePage, router } from '@inertiajs/react';
-import { TrendingUp, Users, WalletCards, CreditCard } from 'lucide-react';
+
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
 const chartConfig = {
@@ -107,7 +107,7 @@ export default function DashboardKabupaten() {
 
     const getStatusBadge = (status: string) => {
         const badges: Record<string, { color: string; text: string }> = {
-            pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Pending' },
+            pending: { color: 'bg-yellow-100 text-yellow-800', text: 'Menunggu' },
             settlement: { color: 'bg-green-100 text-green-800', text: 'Berhasil' },
             cancel: { color: 'bg-red-100 text-red-800', text: 'Dibatalkan' },
             deny: { color: 'bg-red-100 text-red-800', text: 'Ditolak' },
@@ -133,18 +133,15 @@ export default function DashboardKabupaten() {
 
             <div className="flex min-h-screen flex-col gap-6 bg-gray-50 p-6">
                 {/* Header Sambutan */}
-                <div className="rounded-lg bg-gradient-to-r from-pink-100 to-pink-200 p-6 text-black shadow">
-                    <h1 className="text-xl font-bold">Selamat Datang di Dashboard {namaUser} PGRI </h1>
-                    <p className="text-sm">Pantau aktivitas iuran dan laporan secara cepat dan efisien.</p>
+                <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
+                    <h1 className="text-2xl font-bold text-gray-800">Selamat Datang, {namaUser}</h1>
+                    <p className="text-gray-600 mt-1">Pantau aktivitas iuran dan laporan secara cepat dan efisien</p>
                 </div>
 
                 {/* Statistik Cards */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <Card className="text-red-600 shadow-md">
                         <CardContent className="p-5">
-                            <p className="pb-2">
-                                <WalletCards />
-                            </p>
                             <p className="text-sm">Total Saldo Masuk</p>
                             <p className="text-3xl font-bold">{formatCurrency(totalMasuk)}</p>
                         </CardContent>
@@ -152,9 +149,6 @@ export default function DashboardKabupaten() {
 
                     <Card className="text-green-600 shadow-md">
                         <CardContent className="p-5">
-                            <p className="pb-2">
-                                <TrendingUp />
-                            </p>
                             <p className="text-sm">Jumlah Transaksi</p>
                             <p className="text-3xl font-bold">{jumlahTransaksi}</p>
                         </CardContent>
@@ -162,9 +156,6 @@ export default function DashboardKabupaten() {
 
                     <Card className="text-blue-600 shadow-md">
                         <CardContent className="p-5">
-                            <p className="pb-2">
-                                <Users />
-                            </p>
                             <p className="text-sm">Jumlah Anggota</p>
                             <p className="text-3xl font-bold">{jumlahAnggota}</p>
                         </CardContent>
@@ -175,7 +166,7 @@ export default function DashboardKabupaten() {
                 <Card className="bg-white shadow-md">
                     <CardContent className="p-5">
                         <div className="mb-4 flex items-center justify-between">
-                            <h3 className="text-md mb-4 font-semibold">📊 Grafik Pemasukan Bulanan</h3>
+                            <h3 className="text-lg font-semibold text-gray-800">Grafik Pemasukan Bulanan</h3>
                             {/* <p className="text-sm font-medium text-green-600">Pertumbuhan: +{growth}%</p> */}
                         </div>
                         <div className="!h-[400px] w-full">
@@ -230,7 +221,7 @@ export default function DashboardKabupaten() {
                 {/* Transaksi Terbaru */}
                 <Card className="bg-white shadow-md">
                     <CardContent className="p-5">
-                        <h3 className="text-md mb-3 font-semibold">🧾 Transaksi Terbaru</h3>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Transaksi Terbaru</h3>
                         <table className="w-full border-separate border-spacing-y-2 text-sm">
                             <thead className="bg-gray-100 text-gray-600">
                                 <tr>
@@ -261,25 +252,17 @@ export default function DashboardKabupaten() {
                 </Card>
 
                 {/* Payment Button */}
-                <div className="flex justify-center">
-                    <button
-                        onClick={() => setShowPaymentModal(true)}
-                        className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-3 text-white shadow-lg transition hover:from-blue-700 hover:to-blue-800"
-                    >
-                        <CreditCard className="h-5 w-5" />
-                        Bayar Iuran dengan Midtrans
-                    </button>
-                </div>
+        
 
                 {/* Recent Transactions */}
                 {recentTransactions.length > 0 && (
                     <Card className="bg-white shadow-md">
                         <CardContent className="p-5">
-                            <h3 className="text-md mb-3 font-semibold">💳 Riwayat Pembayaran</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Riwayat Pembayaran</h3>
                             <table className="w-full border-separate border-spacing-y-2 text-sm">
                                 <thead className="bg-gray-100 text-gray-600">
                                     <tr>
-                                        <th className="px-3 py-2 text-left">Order ID</th>
+                                        <th className="px-3 py-2 text-left">ID Pesanan</th>
                                         <th className="px-3 py-2 text-left">Deskripsi</th>
                                         <th className="px-3 py-2 text-left">Jumlah</th>
                                         <th className="px-3 py-2 text-left">Status</th>

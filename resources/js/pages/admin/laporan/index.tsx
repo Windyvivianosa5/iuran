@@ -2,8 +2,6 @@
 
 import { Head, usePage } from '@inertiajs/react';
 import { pdf } from '@react-pdf/renderer';
-import { motion } from 'framer-motion';
-import { MoreHorizontal } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +22,7 @@ import { terbilang } from '@/utils/terbilang';
 import DocumentPDF from '../pdf/document';
 import KwitansiPDF from '../pdf/kwitansi';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard Admin', href: 'admin/dashboard/laporan' }];
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Laporan', href: 'admin/dashboard/laporan' }];
 
 export default function DashboardAdminLaporan() {
     const { iuran } = usePage().props as any;
@@ -40,7 +38,7 @@ export default function DashboardAdminLaporan() {
     const handleFilterYear = (year: string) => {
         const laporan: any = generateLaporan(iuran, parseInt(year));
         setDatas(laporan);
-        setYearSelect(year); // tambah ini supaya yearSelect konsisten
+        setYearSelect(year);
     };
 
     const handlePrintAll = async () => {
@@ -82,37 +80,24 @@ export default function DashboardAdminLaporan() {
 
     return (
         <AppAdminLayout breadcrumbs={breadcrumbs}>
-            <Head title="Dashboard Admin" />
+            <Head title="Laporan Iuran" />
             <div className="space-y-6 p-6">
-                {/* Banner */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                    className="rounded-xl border border-gray-200 bg-gradient-to-r from-blue-100 via-blue-50 to-white p-6 shadow-sm dark:from-blue-900/50 dark:to-gray-900"
-                >
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <h2 className="text-xl font-bold text-blue-800 dark:text-blue-300">📊 Rekapitulasi Iuran Kabupaten/Kota</h2>
-                            <p className="text-sm text-gray-700 dark:text-gray-300">
-                                Menampilkan total pemasukan iuran berdasarkan bulan dan kabupaten untuk tahun {yearSelect}.
-                            </p>
-                        </div>
-                        <div className="mt-2 sm:mt-0">
-                            <Button onClick={handlePrintAll} className="bg-blue-600 text-white shadow-md hover:bg-blue-700">
-                                🖨️ Print Semua
-                            </Button>
-                        </div>
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Rekapitulasi Iuran Kabupaten/Kota</h1>
+                        <p className="mt-1 text-sm text-gray-500">
+                            Total pemasukan iuran berdasarkan bulan dan kabupaten untuk tahun {yearSelect}
+                        </p>
                     </div>
-                </motion.div>
+                    <Button onClick={handlePrintAll} className="bg-blue-600 hover:bg-blue-700">
+                        Print Semua
+                    </Button>
+                </div>
 
-                {/* Select Tahun */}
-                <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                    className="flex items-center gap-4"
-                >
+                {/* Filter Tahun */}
+                <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-gray-700">Tahun:</label>
                     <Select onValueChange={setYearSelect} open={isOpen} onOpenChange={setIsOpen}>
                         <SelectTrigger className="w-[100px]">
                             <SelectValue placeholder={yearSelect} />
@@ -138,22 +123,16 @@ export default function DashboardAdminLaporan() {
                             ))}
                         </SelectContent>
                     </Select>
-                </motion.div>
+                </div>
 
                 {/* Tabel Laporan */}
-                <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.3 }}
-                    className="mx-auto w-full px-4 md:max-w-[660px] xl:max-w-[1200px]"
-                >
-                    <div className="overflow-x-auto rounded-lg border bg-white shadow-sm dark:bg-gray-900">
-                        <Table className="min-w-full">
-                            <TableHeader>
-                                <TableRow className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-white">
-                                    <TableHead>No</TableHead>
-                                    <TableHead>Kabupaten</TableHead>
-                                    <TableHead>Jumlah Anggota</TableHead>
+                <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="bg-gray-50">
+                                <TableHead className="font-semibold">No</TableHead>
+                                <TableHead className="font-semibold">Kabupaten</TableHead>
+                                <TableHead className="font-semibold">Jumlah Anggota</TableHead>
                                     {[
                                         'Januari',
                                         'Februari',
@@ -167,65 +146,64 @@ export default function DashboardAdminLaporan() {
                                         'Oktober',
                                         'November',
                                         'Desember',
-                                    ].map((bulan) => (
-                                        <TableHead key={bulan}>{bulan}</TableHead>
-                                    ))}
-                                    <TableHead>Total Iuran</TableHead>
-                                    <TableHead>Total Seharusnya</TableHead>
-                                    <TableHead>Kekurangan</TableHead>
-                                    <TableHead className="text-right">Aksi</TableHead>
+                                ].map((bulan) => (
+                                    <TableHead key={bulan} className="font-semibold">
+                                        {bulan}
+                                    </TableHead>
+                                ))}
+                                <TableHead className="font-semibold">Total Iuran</TableHead>
+                                <TableHead className="font-semibold">Total Seharusnya</TableHead>
+                                <TableHead className="font-semibold">Kekurangan</TableHead>
+                                <TableHead className="text-right font-semibold">Aksi</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {datas.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={20} className="py-4 text-center text-gray-500">
-                                            Data laporan belum tersedia.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                                {datas.map((item: any, index: number) => (
-                                    <TableRow key={item.kabupaten} className="hover:bg-blue-50 dark:hover:bg-gray-800">
-                                        <TableCell>{index + 1}</TableCell>
-                                        <TableCell className="font-medium text-blue-800 dark:text-blue-300">{item.kabupaten}</TableCell>
-                                        <TableCell>{item.jumlahAnggota}</TableCell>
-                                        <TableCell>{formatCurrency(item.januari)}</TableCell>
-                                        <TableCell>{formatCurrency(item.februari)}</TableCell>
-                                        <TableCell>{formatCurrency(item.maret)}</TableCell>
-                                        <TableCell>{formatCurrency(item.april)}</TableCell>
-                                        <TableCell>{formatCurrency(item.mei)}</TableCell>
-                                        <TableCell>{formatCurrency(item.juni)}</TableCell>
-                                        <TableCell>{formatCurrency(item.juli)}</TableCell>
-                                        <TableCell>{formatCurrency(item.agustus)}</TableCell>
-                                        <TableCell>{formatCurrency(item.september)}</TableCell>
-                                        <TableCell>{formatCurrency(item.oktober)}</TableCell>
-                                        <TableCell>{formatCurrency(item.november)}</TableCell>
-                                        <TableCell>{formatCurrency(item.desember)}</TableCell>
-                                        <TableCell className="font-semibold text-green-700 dark:text-green-400">
-                                            {formatCurrency(item.totalIuran)}
-                                        </TableCell>
-                                        <TableCell>{formatCurrency(item.totalSeharusnya)}</TableCell>
-                                        <TableCell className={item.kekurangan > 0 ? 'font-bold text-red-500' : 'text-gray-600'}>
-                                            Rp. {item.kekurangan.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" size="icon">
-                                                        <MoreHorizontal />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-fit">
-                                                    <DropdownMenuItem onClick={() => handlePrint(item)}>🧾 Unduh Kwitansi</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </motion.div>
+                            {datas.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={20} className="py-8 text-center text-gray-500">
+                                        Data laporan belum tersedia untuk tahun {yearSelect}
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            {datas.map((item: any, index: number) => (
+                                <TableRow key={item.kabupaten} className="hover:bg-gray-50">
+                                    <TableCell className="text-gray-600">{index + 1}</TableCell>
+                                    <TableCell className="font-medium text-gray-900">{item.kabupaten}</TableCell>
+                                    <TableCell className="text-gray-600">{item.jumlahAnggota}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.januari)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.februari)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.maret)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.april)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.mei)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.juni)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.juli)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.agustus)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.september)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.oktober)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.november)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.desember)}</TableCell>
+                                    <TableCell className="font-semibold text-green-700">{formatCurrency(item.totalIuran)}</TableCell>
+                                    <TableCell className="text-gray-600">{formatCurrency(item.totalSeharusnya)}</TableCell>
+                                    <TableCell className={item.kekurangan > 0 ? 'font-semibold text-red-600' : 'text-gray-600'}>
+                                        Rp. {item.kekurangan.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline" size="sm">
+                                                    Aksi
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => handlePrint(item)}>Unduh Kwitansi</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
             </div>
         </AppAdminLayout>
     );

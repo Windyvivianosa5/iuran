@@ -42,23 +42,27 @@ Route::middleware(['auth', 'verified','role:admin'])->group(function () {
     Route::post('admin/dashboard/notifikasi/{id}/mark-as-cancel', [NotifikasiController::class, 'markAsCancel'])->name('admin.dashboard.notifikasi.markAsCancel');
     Route::post('/dashboard/notifikasi/mark-all-read', [NotifikasiController::class, 'markAllAsRead'])->name('admin.dashboard.notifikasi.markAllAsRead');
 
+    // Kelola Kabupaten routes
+    Route::get('admin/dashboard/kabupaten', [\App\Http\Controllers\Admin\KabupatenController::class, 'index'])->name('admin.dashboard.kabupaten.index');
+    Route::get('admin/dashboard/kabupaten/create', [\App\Http\Controllers\Admin\KabupatenController::class, 'create'])->name('admin.dashboard.kabupaten.create');
+    Route::post('admin/dashboard/kabupaten', [\App\Http\Controllers\Admin\KabupatenController::class, 'store'])->name('admin.dashboard.kabupaten.store');
+    Route::get('admin/dashboard/kabupaten/{kabupaten}/edit', [\App\Http\Controllers\Admin\KabupatenController::class, 'edit'])->name('admin.dashboard.kabupaten.edit');
+    Route::put('admin/dashboard/kabupaten/{kabupaten}', [\App\Http\Controllers\Admin\KabupatenController::class, 'update'])->name('admin.dashboard.kabupaten.update');
+    Route::delete('admin/dashboard/kabupaten/{kabupaten}', [\App\Http\Controllers\Admin\KabupatenController::class, 'destroy'])->name('admin.dashboard.kabupaten.destroy');
+
 });
 
 Route::middleware(['auth', 'verified','role:kabupaten'])->group(function () {
     Route::get('kabupaten/dashboard', [DashboardKabupatenController::class, 'index'])->name('kabupaten.dashboard');
     
-    // Iuran routes (manual instead of resource to avoid conflicts)
+    // Transaction/Iuran routes - Midtrans only (no manual CRUD)
     Route::get('/kabupaten/dashboard/iuran', [KabupatenController::class, 'index'])->name('iuran.index');
     Route::get('/kabupaten/dashboard/iuran/create', [KabupatenController::class, 'create'])->name('iuran.create');
-    Route::post('/kabupaten/dashboard/iuran', [KabupatenController::class, 'store'])->name('iuran.store');
     Route::get('/kabupaten/dashboard/iuran/{id}', [KabupatenController::class, 'showTransaction'])->name('iuran.show');
-    Route::get('/kabupaten/dashboard/iuran/{iuran}/edit', [KabupatenController::class, 'edit'])->name('iuran.edit');
-    Route::put('/kabupaten/dashboard/iuran/{iuran}', [KabupatenController::class, 'update'])->name('iuran.update');
-    Route::delete('/kabupaten/dashboard/iuran/{iuran}', [KabupatenController::class, 'destroy'])->name('iuran.destroy');
     
     Route::get('/kabupaten/dashboard/laporan', [KabupatenController::class, 'laporan'])->name('kabupaten.laporan');
     
-    // Transaction routes
+    // Transaction routes for Midtrans
     Route::post('/kabupaten/transaction/create', [TransactionController::class, 'create'])->name('transaction.create');
     Route::get('/kabupaten/transaction/status/{orderId}', [TransactionController::class, 'checkStatus'])->name('transaction.status');
     Route::get('/kabupaten/transactions', [TransactionController::class, 'index'])->name('transaction.index');

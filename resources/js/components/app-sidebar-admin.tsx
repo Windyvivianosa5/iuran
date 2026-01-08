@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookDown, BookOpen, Folder, Inbox, LayoutGrid, User } from 'lucide-react';
+import { BookDown, Building2, Inbox, LayoutGrid } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -12,6 +12,11 @@ const mainNavItems: NavItem[] = [
         title: 'Beranda',
         href: '/admin/dashboard',
         icon: LayoutGrid,
+    },
+    {
+        title: 'Kelola Kabupaten',
+        href: '/admin/dashboard/kabupaten',
+        icon: Building2,
     },
     {
         title: 'Laporan',

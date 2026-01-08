@@ -113,4 +113,16 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Email for Notifications
+    |--------------------------------------------------------------------------
+    |
+    | This email address will receive notifications about new payments,
+    | system events, and other administrative alerts.
+    |
+    */
+
+    'admin_email' => env('MAIL_ADMIN_EMAIL', 'pusatpgri@gmail.com'),
+
 ];

@@ -14,7 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Eye, CreditCard, CheckCircle, Clock, XCircle } from 'lucide-react';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 
@@ -100,21 +100,19 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
   };
 
   const getPaymentStatusBadge = (status: string) => {
-    const badges: Record<string, { icon: any; color: string; text: string }> = {
-      settlement: { icon: CheckCircle, color: 'bg-green-100 text-green-800 border-green-300', text: 'Berhasil' },
-      pending: { icon: Clock, color: 'bg-yellow-100 text-yellow-800 border-yellow-300', text: 'Pending' },
-      cancel: { icon: XCircle, color: 'bg-red-100 text-red-800 border-red-300', text: 'Dibatalkan' },
-      deny: { icon: XCircle, color: 'bg-red-100 text-red-800 border-red-300', text: 'Ditolak' },
-      expire: { icon: XCircle, color: 'bg-gray-100 text-gray-800 border-gray-300', text: 'Kadaluarsa' },
-      failure: { icon: XCircle, color: 'bg-red-100 text-red-800 border-red-300', text: 'Gagal' },
+    const badges: Record<string, { color: string; text: string }> = {
+      settlement: { color: 'bg-green-100 text-green-800 border-green-300', text: 'Berhasil' },
+      pending: { color: 'bg-yellow-100 text-yellow-800 border-yellow-300', text: 'Menunggu' },
+      cancel: { color: 'bg-red-100 text-red-800 border-red-300', text: 'Dibatalkan' },
+      deny: { color: 'bg-red-100 text-red-800 border-red-300', text: 'Ditolak' },
+      expire: { color: 'bg-gray-100 text-gray-800 border-gray-300', text: 'Kadaluarsa' },
+      failure: { color: 'bg-red-100 text-red-800 border-red-300', text: 'Gagal' },
     };
     
-    const badge = badges[status] || { icon: Clock, color: 'bg-gray-100 text-gray-800 border-gray-300', text: status };
-    const Icon = badge.icon;
+    const badge = badges[status] || { color: 'bg-gray-100 text-gray-800 border-gray-300', text: status };
     
     return (
       <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badge.color}`}>
-        <Icon className="h-3.5 w-3.5" />
         {badge.text}
       </div>
     );
@@ -125,13 +123,11 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
       <Head title="Daftar Transaksi" />
       <div className="flex flex-col gap-6 p-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CreditCard className="h-8 w-8 text-blue-600" />
-            <h1 className="text-xl font-bold text-gray-800">💳 Daftar Transaksi Pembayaran</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Daftar Transaksi Pembayaran</h1>
           </div>
           <Link href="iuran/create">
             <Button variant="default" className="bg-gradient-to-r from-blue-600 to-blue-700 shadow hover:from-blue-700 hover:to-blue-800">
-              <CreditCard className="mr-2 h-4 w-4" />
               Bayar Iuran
             </Button>
           </Link>
@@ -139,7 +135,7 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
 
         {/* Info Box */}
         <div className="rounded-lg bg-blue-50 p-4">
-          <h3 className="mb-1 font-semibold text-blue-900">ℹ️ Informasi</h3>
+          <h3 className="mb-2 font-semibold text-blue-900">Informasi</h3>
           <p className="text-sm text-blue-800">
             Semua pembayaran dilakukan melalui Midtrans Payment Gateway. Klik "Bayar Iuran" untuk melakukan pembayaran baru.
             Untuk transaksi pending, klik "Lanjutkan Bayar" untuk menyelesaikan pembayaran.
@@ -151,7 +147,7 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Order ID</TableHead>
+                  <TableHead>ID Pesanan</TableHead>
                   <TableHead>Deskripsi</TableHead>
                   <TableHead>Nominal</TableHead>
                   <TableHead>Metode</TableHead>
@@ -195,13 +191,11 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
                               onClick={() => handleContinuePayment(transaction)}
                               disabled={isProcessing}
                             >
-                              <CreditCard className="h-4 w-4" />
                               Lanjutkan Bayar
                             </Button>
                           )}
                           <Link href={`/kabupaten/dashboard/iuran/${transaction.id}`}>
                             <Button variant="ghost" size="sm" className="gap-1.5">
-                              <Eye className="h-4 w-4" />
                               Detail
                             </Button>
                           </Link>
@@ -213,7 +207,6 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
                   <TableRow>
                     <TableCell colSpan={7} className="py-8 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
-                        <CreditCard className="h-12 w-12 text-gray-300" />
                         <p className="font-medium">Belum ada transaksi pembayaran</p>
                         <p className="text-sm">Klik "Bayar Iuran" untuk melakukan pembayaran pertama</p>
                       </div>
@@ -244,7 +237,7 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
             </Card>
             <Card className="border-l-4 border-l-yellow-500">
               <CardContent className="p-4">
-                <p className="text-sm text-gray-600">Pending</p>
+                <p className="text-sm text-gray-600">Menunggu</p>
                 <p className="text-2xl font-bold text-yellow-700">
                   {transactions.filter((t: any) => t.status === 'pending').length}
                 </p>

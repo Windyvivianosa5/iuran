@@ -2,7 +2,6 @@
 
 import { generateLaporan } from '@/utils/filterLaporan';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { BarChart2, FileText, LineChart, UploadCloud } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function Welcome() {
@@ -15,10 +14,10 @@ export default function Welcome() {
     }, []);
 
     const fiturList = [
-        { icon: <BarChart2 className="h-6 w-6 text-indigo-600" />, label: 'Rekap Keuangan Bulanan', link: '' },
-        { icon: <FileText className="h-6 w-6 text-green-600" />, label: 'Laporan Per Kabupaten', link: '' },
-        { icon: <UploadCloud className="h-6 w-6 text-yellow-600" />, label: 'Upload Bukti Pembayaran', link: '' },
-        { icon: <LineChart className="h-6 w-6 text-pink-600" />, label: 'Analisis Otomatis', link: '' },
+        { label: 'Rekap Keuangan Bulanan', description: 'Pantau pemasukan dan pengeluaran setiap bulan', color: 'border-blue-500' },
+        { label: 'Laporan Per Kabupaten', description: 'Lihat laporan detail setiap kabupaten', color: 'border-green-500' },
+        { label: 'Pembayaran Digital', description: 'Bayar iuran dengan Midtrans Payment Gateway', color: 'border-yellow-500' },
+        { label: 'Analisis Otomatis', description: 'Grafik dan statistik pembayaran real-time', color: 'border-pink-500' },
     ];
 
     return (
@@ -61,14 +60,14 @@ export default function Welcome() {
                 {/* FITUR SECTION */}
                 <section className="mx-auto max-w-7xl px-6 py-12">
                     <h3 className="mb-8 text-center text-3xl font-semibold">Fitur Utama</h3>
-                    <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                         {fiturList.map((fitur, index) => (
                             <div
                                 key={index}
-                                className="flex flex-col items-center justify-center rounded-xl bg-white p-6 shadow transition hover:bg-indigo-50 hover:shadow-md dark:bg-[#1e1e1e] dark:hover:bg-[#2a2a2a]"
+                                className={`flex flex-col justify-center rounded-xl border-l-4 ${fitur.color} bg-white p-6 shadow transition hover:shadow-lg dark:bg-[#1e1e1e]`}
                             >
-                                {fitur.icon}
-                                <p className="mt-2 text-center text-sm font-medium text-gray-700 dark:text-gray-200">{fitur.label}</p>
+                                <p className="text-base font-semibold text-gray-800 dark:text-gray-100">{fitur.label}</p>
+                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{fitur.description}</p>
                             </div>
                         ))}
                     </div>

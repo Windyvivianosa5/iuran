@@ -10,8 +10,28 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { formatNumber, parseNumber } from '@/utils/formatInput';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
+
 import { toast } from 'sonner';
+
+// Extend Window interface for Midtrans
+declare global {
+    interface Window {
+        snap?: {
+            pay: (token: string, options: {
+                onSuccess?: (result: any) => void;
+                onPending?: (result: any) => void;
+                onError?: (result: any) => void;
+                onClose?: () => void;
+            }) => void;
+        };
+    }
+}
+
+// Define props interface
+interface PageProps {
+    midtransClientKey: string;
+    [key: string]: any; // Index signature for Inertia compatibility
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -29,7 +49,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Create() {
-    const { midtransClientKey } = usePage().props as any;
+    const { midtransClientKey } = usePage<PageProps>().props;
     const [amount, setAmount] = React.useState('');
     const [description, setDescription] = React.useState('');
     const [isProcessing, setIsProcessing] = React.useState(false);
@@ -111,8 +131,7 @@ export default function Create() {
 
             if (data.success && data.snap_token) {
                 // Check if snap is loaded
-                // @ts-ignore
-                if (typeof window.snap === 'undefined') {
+                if (typeof window.snap === 'undefined' || !window.snap) {
                     console.error('Midtrans Snap not loaded');
                     toast.error('Midtrans belum siap. Silakan refresh halaman.');
                     setIsProcessing(false);
@@ -120,7 +139,6 @@ export default function Create() {
                 }
 
                 console.log('Opening Midtrans payment popup...');
-                // @ts-ignore
                 window.snap.pay(data.snap_token, {
                     onSuccess: function(result: any) {
                         console.log('Payment success:', result);
@@ -163,16 +181,14 @@ export default function Create() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Bayar Iuran dengan Midtrans" />
             <div className="flex flex-col gap-6 p-6">
-                <div className="flex items-center gap-3">
-                    <CreditCard className="h-8 w-8 text-blue-600" />
-                    <h1 className="text-2xl font-semibold text-gray-800">💳 Bayar Iuran dengan Midtrans</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold text-gray-800">Bayar Iuran dengan Midtrans</h1>
                 </div>
 
                 {/* Payment Status Alert */}
                 {paymentStatus === 'success' && (
                     <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                         <div className="flex items-center gap-3">
-                            <CheckCircle className="h-6 w-6 text-green-600" />
                             <div>
                                 <h3 className="font-semibold text-green-800">Pembayaran Berhasil!</h3>
                                 <p className="text-sm text-green-700">Transaksi Anda telah berhasil diproses. Anda akan diarahkan kembali...</p>
@@ -184,7 +200,6 @@ export default function Create() {
                 {paymentStatus === 'pending' && (
                     <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                         <div className="flex items-center gap-3">
-                            <Clock className="h-6 w-6 text-yellow-600" />
                             <div>
                                 <h3 className="font-semibold text-yellow-800">Pembayaran Sedang Diproses</h3>
                                 <p className="text-sm text-yellow-700">Transaksi Anda sedang dalam proses verifikasi.</p>
@@ -196,7 +211,6 @@ export default function Create() {
                 {paymentStatus === 'failed' && (
                     <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                         <div className="flex items-center gap-3">
-                            <XCircle className="h-6 w-6 text-red-600" />
                             <div>
                                 <h3 className="font-semibold text-red-800">Pembayaran Gagal</h3>
                                 <p className="text-sm text-red-700">Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.</p>
@@ -210,7 +224,7 @@ export default function Create() {
                         <form onSubmit={handlePayment} className="space-y-6">
                             {/* Info Box */}
                             <div className="rounded-lg bg-blue-50 p-4">
-                                <h3 className="mb-2 font-semibold text-blue-900">ℹ️ Informasi Pembayaran</h3>
+                                <h3 className="mb-2 font-semibold text-blue-900">Informasi Pembayaran</h3>
                                 <ul className="space-y-1 text-sm text-blue-800">
                                     <li>• Pembayaran menggunakan Midtrans Payment Gateway</li>
                                     <li>• Mendukung berbagai metode pembayaran (Kartu Kredit, Transfer Bank, E-Wallet, dll)</li>
@@ -298,7 +312,6 @@ export default function Create() {
                                         </>
                                     ) : (
                                         <>
-                                            <CreditCard className="mr-2 h-4 w-4" />
                                             Bayar Sekarang
                                         </>
                                     )}
@@ -310,7 +323,7 @@ export default function Create() {
 
                 {/* Security Notice */}
                 <div className="max-w-3xl text-center text-xs text-gray-500">
-                    <p>🔒 Pembayaran Anda dilindungi dengan enkripsi SSL dan 3D Secure</p>
+                    <p>Pembayaran Anda dilindungi dengan enkripsi SSL dan 3D Secure</p>
                     <p className="mt-1">Powered by Midtrans Payment Gateway</p>
                 </div>
             </div>
