@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Kabupaten;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -14,7 +14,7 @@ class KabupatenController extends Controller
      */
     public function index()
     {
-        $kabupaten = Kabupaten::with('users')
+        $kabupaten = User::where('role', 'kabupaten')
             ->orderBy('nama_kabupaten', 'asc')
             ->get();
 
@@ -41,67 +41,54 @@ class KabupatenController extends Controller
 
         // Validate ALL fields upfront (before transaction)
         $validated = $request->validate([
-            'nama_kabupaten' => 'required|string|max:255|unique:kabupatens,nama_kabupaten',
-            'kode_kabupaten' => 'required|string|max:5|unique:kabupatens,kode_kabupaten',
+            'nama_kabupaten' => 'required|string|max:255',
+            'kode_kabupaten' => 'required|string|max:5|unique:users,kode_kabupaten',
             'jumlah_anggota' => 'required|integer|min:0',
             'status' => 'required|in:aktif,nonaktif',
-            // User validation (conditional)
-            'create_user' => 'nullable|boolean',
-            'user_name' => 'required_if:create_user,true,1|nullable|string|max:255',
-            'user_email' => 'required_if:create_user,true,1|nullable|email|unique:users,email',
-            'user_password' => 'required_if:create_user,true,1|nullable|string|min:8|confirmed',
+            // User validation
+            'user_name' => 'required|string|max:255',
+            'user_email' => 'required|email|unique:users,email',
+            'user_password' => 'required|string|min:8|confirmed',
         ], [
             'nama_kabupaten.required' => 'Nama kabupaten harus diisi',
-            'nama_kabupaten.unique' => 'Nama kabupaten sudah terdaftar',
             'kode_kabupaten.required' => 'Kode kabupaten harus diisi',
             'kode_kabupaten.unique' => 'Kode kabupaten sudah digunakan',
             'jumlah_anggota.required' => 'Jumlah anggota harus diisi',
             'jumlah_anggota.integer' => 'Jumlah anggota harus berupa angka',
             'jumlah_anggota.min' => 'Jumlah anggota tidak boleh kurang dari 0',
             'status.required' => 'Status harus dipilih',
-            'user_name.required_if' => 'Nama user harus diisi',
-            'user_email.required_if' => 'Email harus diisi',
+            'user_name.required' => 'Nama user harus diisi',
+            'user_email.required' => 'Email harus diisi',
             'user_email.email' => 'Format email tidak valid',
             'user_email.unique' => 'Email sudah terdaftar',
-            'user_password.required_if' => 'Password harus diisi',
+            'user_password.required' => 'Password harus diisi',
             'user_password.min' => 'Password minimal 8 karakter',
             'user_password.confirmed' => 'Konfirmasi password tidak cocok',
         ]);
 
         \DB::beginTransaction();
         try {
-            // Create kabupaten
-            $kabupaten = Kabupaten::create([
+            // Create user with kabupaten role
+            $user = User::create([
+                'name' => $validated['user_name'],
+                'email' => $validated['user_email'],
+                'password' => \Hash::make($validated['user_password']),
+                'role' => 'kabupaten',
                 'nama_kabupaten' => $validated['nama_kabupaten'],
                 'kode_kabupaten' => $validated['kode_kabupaten'],
+                'anggota' => $validated['jumlah_anggota'],
                 'jumlah_anggota' => $validated['jumlah_anggota'],
                 'status' => $validated['status'],
+                'email_verified_at' => now(), // Auto-verify user yang dibuat admin
             ]);
 
-            \Log::info('Kabupaten created', ['id' => $kabupaten->id]);
-
-            // Create user if requested
-            if ($request->create_user == true || $request->create_user == 1 || $request->create_user === 'true') {
-                \Log::info('Creating user for kabupaten', ['kabupaten_id' => $kabupaten->id]);
-                
-                $user = \App\Models\User::create([
-                    'name' => $validated['user_name'],
-                    'email' => $validated['user_email'],
-                    'password' => \Hash::make($validated['user_password']),
-                    'role' => 'kabupaten',
-                    'kabupaten_id' => $kabupaten->id,
-                    'anggota' => $kabupaten->jumlah_anggota,
-                    'email_verified_at' => now(), // Auto-verify user yang dibuat admin
-                ]);
-
-                \Log::info('User created successfully', ['user_id' => $user->id]);
-            }
+            \Log::info('Kabupaten user created', ['id' => $user->id]);
 
             \DB::commit();
             \Log::info('Transaction committed successfully');
 
             return redirect()->route('admin.dashboard.kabupaten.index')
-                ->with('success', 'Kabupaten' . ($request->create_user ? ' dan akun user' : '') . ' berhasil ditambahkan');
+                ->with('success', 'Kabupaten berhasil ditambahkan');
 
         } catch (\Exception $e) {
             \DB::rollBack();
@@ -120,7 +107,7 @@ class KabupatenController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Kabupaten $kabupaten)
+    public function edit(User $kabupaten)
     {
         return Inertia::render('admin/kabupaten/edit', [
             'kabupaten' => $kabupaten,
@@ -130,16 +117,15 @@ class KabupatenController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Kabupaten $kabupaten)
+    public function update(Request $request, User $kabupaten)
     {
         $validated = $request->validate([
-            'nama_kabupaten' => 'required|string|max:255|unique:kabupatens,nama_kabupaten,' . $kabupaten->id,
-            'kode_kabupaten' => 'required|string|max:10|unique:kabupatens,kode_kabupaten,' . $kabupaten->id,
+            'nama_kabupaten' => 'required|string|max:255',
+            'kode_kabupaten' => 'required|string|max:10|unique:users,kode_kabupaten,' . $kabupaten->id,
             'jumlah_anggota' => 'required|integer|min:0',
             'status' => 'required|in:aktif,nonaktif',
         ], [
             'nama_kabupaten.required' => 'Nama kabupaten harus diisi',
-            'nama_kabupaten.unique' => 'Nama kabupaten sudah terdaftar',
             'kode_kabupaten.required' => 'Kode kabupaten harus diisi',
             'kode_kabupaten.unique' => 'Kode kabupaten sudah digunakan',
             'jumlah_anggota.required' => 'Jumlah anggota harus diisi',
@@ -148,7 +134,13 @@ class KabupatenController extends Controller
             'status.required' => 'Status harus dipilih',
         ]);
 
-        $kabupaten->update($validated);
+        $kabupaten->update([
+            'nama_kabupaten' => $validated['nama_kabupaten'],
+            'kode_kabupaten' => $validated['kode_kabupaten'],
+            'anggota' => $validated['jumlah_anggota'],
+            'jumlah_anggota' => $validated['jumlah_anggota'],
+            'status' => $validated['status'],
+        ]);
 
         return redirect()->route('admin.dashboard.kabupaten.index')
             ->with('success', 'Kabupaten berhasil diperbarui');
@@ -157,23 +149,27 @@ class KabupatenController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Kabupaten $kabupaten)
+    public function destroy(User $kabupaten)
     {
-        // Check if kabupaten has users
-        if ($kabupaten->users()->count() > 0) {
+        \DB::beginTransaction();
+        try {
+            // Delete kabupaten user (iurans will be cascade deleted automatically)
+            $kabupaten->delete();
+            
+            \DB::commit();
+            
+            return redirect()->route('admin.dashboard.kabupaten.index')
+                ->with('success', 'Kabupaten dan data terkait berhasil dihapus');
+                
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Error deleting kabupaten', [
+                'error' => $e->getMessage(),
+                'kabupaten_id' => $kabupaten->id
+            ]);
+            
             return redirect()->back()
-                ->with('error', 'Kabupaten tidak dapat dihapus karena masih memiliki user terdaftar');
+                ->with('error', 'Gagal menghapus kabupaten: ' . $e->getMessage());
         }
-
-        // Check if kabupaten has iuran
-        if ($kabupaten->iurans()->count() > 0) {
-            return redirect()->back()
-                ->with('error', 'Kabupaten tidak dapat dihapus karena masih memiliki data iuran');
-        }
-
-        $kabupaten->delete();
-
-        return redirect()->route('admin.dashboard.kabupaten.index')
-            ->with('success', 'Kabupaten berhasil dihapus');
     }
 }

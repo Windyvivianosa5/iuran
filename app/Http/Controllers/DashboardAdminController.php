@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Iuran;
+use App\Models\Transaction;
+use App\Models\User;
 use Inertia\Inertia;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -11,40 +12,43 @@ class DashboardAdminController extends Controller
 {
     public function index()
     {
-        // Fetch all verified contributions with related kabupaten data
-        $iurans = Iuran::with('kabupaten')->where('terverifikasi', 'diterima')->latest()->get();
+        // Fetch all settled transactions with related user (kabupaten) data
+        $transactions = Transaction::with('user')
+            ->where('status', 'settlement')
+            ->latest()
+            ->get();
 
         // Calculate total contributions and transaction count
-        $totalMasuk = $iurans->sum('jumlah');
-        $jumlahTransaksi = $iurans->count();
+        $totalMasuk = $transactions->sum('gross_amount');
+        $jumlahTransaksi = $transactions->count();
 
-        // List of kota in Riau for formatting
-        $kotaList = ['Pekanbaru', 'Dumai'];
-
-        // Semua kabupaten/kota di Riau
-        $allRiauKabupaten = [
-            'Pekanbaru', 'Dumai', 'Bengkalis', 'Indragiri Hilir', 'Indragiri Hulu', 
-            'Kampar', 'Kepulauan Meranti', 'Kuantan Singingi', 'Pelalawan', 
-            'Rokan Hilir', 'Rokan Hulu', 'Siak'
-        ];
+        // Fetch all kabupaten users from database (dynamic)
+        $allKabupaten = User::where('role', 'kabupaten')->orderBy('nama_kabupaten')->get();
+        
+        // Helper function to determine if it's Kota or Kabupaten
+        $getKabupatenType = function($namaKabupaten) {
+            // List of cities (Kota) - you can also add a 'tipe' field to database if preferred
+            $kotaList = ['Pekanbaru', 'Dumai'];
+            return in_array($namaKabupaten, $kotaList) ? 'Kota' : 'Kabupaten';
+        };
 
         // Map latest 5 transactions
-        $transaksiTerbaru = $iurans->take(5)->map(function ($item) use ($kotaList) {
-            $kabupatenName = $item->kabupaten->name ?? 'Tidak Diketahui';
-            $type = in_array($kabupatenName, $kotaList) ? 'Kota' : 'Kabupaten';
+        $transaksiTerbaru = $transactions->take(5)->map(function ($item) use ($getKabupatenType) {
+            $kabupatenName = $item->user->nama_kabupaten ?? 'Tidak Diketahui';
+            $type = $kabupatenName !== 'Tidak Diketahui' ? $getKabupatenType($kabupatenName) : '';
             $formattedName = $kabupatenName !== 'Tidak Diketahui' ? "PGRI {$type} {$kabupatenName}" : 'Tidak Diketahui';
 
             return [
-                'bulan' => \Carbon\Carbon::parse($item->tanggal)->locale('id')->translatedFormat('F'),
+                'bulan' => \Carbon\Carbon::parse($item->settlement_time ?? $item->created_at)->locale('id')->translatedFormat('F'),
                 'kabupaten' => $formattedName,
-                'total_iuran' => $item->jumlah,
+                'total_iuran' => $item->gross_amount,
             ];
         });
 
-        // Map latest 5 notifications for verified contributions
-        $notifikasi = $iurans->whereNotNull('kabupaten_id')->take(5)->map(function ($item) use ($kotaList) {
-            $kabupatenName = $item->kabupaten->name ?? 'Tidak Diketahui';
-            $type = in_array($kabupatenName, $kotaList) ? 'Kota' : 'Kabupaten';
+        // Map latest 5 notifications for settled transactions
+        $notifikasi = $transactions->whereNotNull('user_id')->take(5)->map(function ($item) use ($getKabupatenType) {
+            $kabupatenName = $item->user->nama_kabupaten ?? 'Tidak Diketahui';
+            $type = $kabupatenName !== 'Tidak Diketahui' ? $getKabupatenType($kabupatenName) : '';
             $formattedName = $kabupatenName !== 'Tidak Diketahui' ? "PGRI {$type} {$kabupatenName}" : 'Tidak Diketahui';
 
             return [
@@ -55,13 +59,14 @@ class DashboardAdminController extends Controller
         });
 
         // Fetch monthly contribution report
-        $laporans = Iuran::select(
-            DB::raw('MONTH(tanggal) as bulan'),
-            DB::raw('SUM(jumlah) as total_iuran')
+        $laporans = Transaction::select(
+            DB::raw('MONTH(settlement_time) as bulan'),
+            DB::raw('SUM(gross_amount) as total_iuran')
         )
-            ->where('terverifikasi', 'diterima') // Match condition with $iurans
-            ->groupBy(DB::raw('MONTH(tanggal)'))
-            ->orderBy(DB::raw('MONTH(tanggal)'))
+            ->where('status', 'settlement')
+            ->whereNotNull('settlement_time')
+            ->groupBy(DB::raw('MONTH(settlement_time)'))
+            ->orderBy(DB::raw('MONTH(settlement_time)'))
             ->get()
             ->map(function ($item) {
                 return [
@@ -70,26 +75,27 @@ class DashboardAdminController extends Controller
                 ];
             });
 
-        // Ambil data iuran yang sudah ada di database
-        $existingIuran = Iuran::select(
-            'kabupaten_id',
-            DB::raw('SUM(jumlah) as total_iuran'),
+        // Ambil data transaksi yang sudah ada di database
+        $existingTransactions = Transaction::select(
+            'user_id',
+            DB::raw('SUM(gross_amount) as total_iuran'),
             DB::raw('COUNT(*) as jumlah_transaksi')
         )
-            ->with('kabupaten')
-            ->where('terverifikasi', 'diterima')
-            ->whereNotNull('kabupaten_id')
-            ->groupBy('kabupaten_id')
+            ->with('user')
+            ->where('status', 'settlement')
+            ->whereNotNull('user_id')
+            ->groupBy('user_id')
             ->get()
-            ->keyBy('kabupaten.name');
+            ->keyBy('user.nama_kabupaten');
 
-        // Laporan per kabupaten/kota dengan semua kabupaten Riau
-        $laporanKabupaten = collect($allRiauKabupaten)->map(function ($kabupatenName) use ($existingIuran, $kotaList) {
-            $type = in_array($kabupatenName, $kotaList) ? 'Kota' : 'Kabupaten';
+        // Laporan per kabupaten/kota dengan semua kabupaten dari database
+        $laporanKabupaten = $allKabupaten->map(function ($kabupaten) use ($existingTransactions, $getKabupatenType) {
+            $kabupatenName = $kabupaten->nama_kabupaten;
+            $type = $getKabupatenType($kabupatenName);
             $formattedName = "PGRI {$type} {$kabupatenName}";
             
             // Cari data yang ada di database
-            $existingData = $existingIuran->get($kabupatenName);
+            $existingData = $existingTransactions->get($kabupatenName);
             
             return [
                 'kabupaten' => $formattedName,
@@ -102,9 +108,8 @@ class DashboardAdminController extends Controller
             ];
         })->sortByDesc('total_iuran')->values();
 
-        // Render the admin dashboard with data
         return Inertia::render('admin/dashboard/index', [
-            'totalMasuk' => (float) $totalMasuk, // Ensure numeric type
+            'totalMasuk' => (float) $totalMasuk,
             'jumlahTransaksi' => $jumlahTransaksi,
             'transaksiTerbaru' => $transaksiTerbaru,
             'notifikasi' => $notifikasi,
@@ -113,4 +118,3 @@ class DashboardAdminController extends Controller
         ]);
     }
 }
-?>

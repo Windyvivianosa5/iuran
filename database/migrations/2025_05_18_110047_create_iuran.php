@@ -13,12 +13,9 @@ return new class extends Migration
     {
         Schema::create('iurans', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('kabupaten_id')->contrained(
-                table:'users',
-                indexName: 'iuran_kabupaten_id'
-            );
+            $table->foreignId('kabupaten_id')->constrained('users')->onDelete('cascade');
             $table->integer('jumlah');
-            $table->string('bukti_transaksi');
+            $table->string('bukti_transaksi')->nullable();
             $table->dateTime('tanggal');
             $table->string('deskripsi');
             $table->enum('terverifikasi',['pending','ditolak','diterima'])->default('pending');

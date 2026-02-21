@@ -25,7 +25,7 @@ import KwitansiPDF from '../pdf/kwitansi';
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Laporan', href: 'admin/dashboard/laporan' }];
 
 export default function DashboardAdminLaporan() {
-    const { iuran } = usePage().props as any;
+    const { iuran, kabupatens } = usePage().props as any;
 
     const [datas, setDatas] = useState([]);
     const [yearSelect, setYearSelect] = useState(new Date().getFullYear().toString());
@@ -36,7 +36,7 @@ export default function DashboardAdminLaporan() {
     const years = Array.from({ length: 5 }, (_, i) => 2024 + i);
 
     const handleFilterYear = (year: string) => {
-        const laporan: any = generateLaporan(iuran, parseInt(year));
+        const laporan: any = generateLaporan(iuran, kabupatens || [], parseInt(year));
         setDatas(laporan);
         setYearSelect(year);
     };

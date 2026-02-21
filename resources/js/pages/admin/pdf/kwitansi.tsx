@@ -35,11 +35,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
     label: {
-        width: '30%',
+        width: '18%',
         fontWeight: 'bold',
     },
     value: {
-        width: '70%',
+        width: '100%',
     },
     valueUnderline: {
         width: '70%',

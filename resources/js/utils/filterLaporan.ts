@@ -19,7 +19,7 @@ type LaporanPerKabupaten = {
     kekurangan: number;
 };
 
-export function generateLaporan(data: any[], tahun = new Date().getFullYear()) {
+export function generateLaporan(data: any[], kabupatens: any[] = [], tahun = new Date().getFullYear()) {
     const IURAN_TETAP_BASE = tahun == 2024 ? 1200 : 1600; // 2023-24(1200),2025 dari januari (1600)
 
     const IURAN_TETAP = IURAN_TETAP_BASE + (new Date().getFullYear() - tahun) * 400;
@@ -39,37 +39,32 @@ export function generateLaporan(data: any[], tahun = new Date().getFullYear()) {
         'desember',
     ] as const;
 
-    const semuaKabupaten = [
-        'Pekanbaru',
-        'Dumai',
-        'Kampar',
-        'Rokan Hulu',
-        'Rokan Hilir',
-        'Bengkalis',
-        'Siak',
-        'Pelalawan',
-        'Indragiri Hulu',
-        'Indragiri Hilir',
-        'Kepulauan Meranti',
-        'Kuantan Singingi',
-    ];
-
     const result: Record<string, LaporanPerKabupaten> = {};
 
-    // Filter data sesuai tahun dan status verifikasi
+    // Filter data sesuai tahun dan status settlement
+    // Data sekarang dari table 'transactions', jadi field-nya beda
     const filteredData = data.filter((item: any) => {
-        const tanggal = new Date(item.tanggal);
-        return item.terverifikasi === 'diterima' && tanggal.getFullYear() === tahun;
+        // Gunakan settlement_time atau created_at jika settlement belum ada (seharusnya ada kalau status settlement)
+        const dateString = item.settlement_time || item.created_at || item.tanggal; 
+        const tanggal = new Date(dateString);
+        
+        // Cek status: 'settlement' (midtrans) atau 'diterima' (legacy/manual)
+        const isSettled = item.status === 'settlement' || item.terverifikasi === 'diterima';
+        
+        return isSettled && tanggal.getFullYear() === tahun;
     });
 
     // Proses data transaksi yang difilter
     filteredData.forEach((item: any) => {
-        const tanggal = new Date(item.tanggal);
-        const kabupatenName = item.kabupaten.name;
-        const anggota = item.kabupaten.anggota;
+        const dateString = item.settlement_time || item.created_at || item.tanggal;
+        const tanggal = new Date(dateString);
+        const kabupatenName = item.user?.nama_kabupaten || 'Tidak Diketahui';
+        const anggota = item.user?.jumlah_anggota || 0;
         const bulanIndex = tanggal.getMonth();
         const bulanKey = bulanMap[bulanIndex];
-        const jumlah = parseFloat(item.jumlah);
+        
+        // Gunakan gross_amount (midtrans) atau jumlah (legacy)
+        const jumlah = parseFloat(item.gross_amount || item.jumlah);
 
         if (!result[kabupatenName]) {
             result[kabupatenName] = {
@@ -98,12 +93,13 @@ export function generateLaporan(data: any[], tahun = new Date().getFullYear()) {
         result[kabupatenName].totalIuran += jumlah;
     });
 
-    // Pastikan semua kabupaten tetap muncul, walau tanpa data
-    semuaKabupaten.forEach((kab) => {
-        if (!result[kab]) {
-            result[kab] = {
-                kabupaten: kab,
-                jumlahAnggota: 0,
+    // Pastikan semua kabupaten dari database tetap muncul, walau tanpa data iuran
+    kabupatens.forEach((kab: any) => {
+        const kabupatenName = kab.nama_kabupaten;
+        if (!result[kabupatenName]) {
+            result[kabupatenName] = {
+                kabupaten: kabupatenName,
+                jumlahAnggota: kab.jumlah_anggota || 0,
                 iuran: IURAN_TETAP,
                 januari: 0,
                 februari: 0,
@@ -118,7 +114,7 @@ export function generateLaporan(data: any[], tahun = new Date().getFullYear()) {
                 november: 0,
                 desember: 0,
                 totalIuran: 0,
-                totalSeharusnya: 0,
+                totalSeharusnya: (kab.jumlah_anggota || 0) * IURAN_TETAP_BASE * 12,
                 kekurangan: 0,
             };
         }

@@ -36,7 +36,6 @@ Route::middleware(['auth', 'verified','role:admin'])->group(function () {
     Route::resource('admin/dashboard/laporan', LaporanController::class);
     Route::get('admin/dashboard', [DashboardAdminController::class, 'index'])->name('admin.dashboard');
     Route::get('admin/dashboard/notifikasi', [NotifikasiController::class, 'index'])->name('admin.dashboard.notifikasi.index');
-    Route::post('/admin/notifikasi/acc/{id}', [NotifikasiController::class, 'acc'])->name('notifikasi.acc');
     Route::get('admin/dashboard/notifikasi/{id}', [NotifikasiController::class, 'show'])->name('admin.dashboard.notifikasi.show');
     Route::post('admin/dashboard/notifikasi/{id}/mark-as-read', [NotifikasiController::class, 'markAsRead'])->name('admin.dashboard.notifikasi.markAsRead');
     Route::post('admin/dashboard/notifikasi/{id}/mark-as-cancel', [NotifikasiController::class, 'markAsCancel'])->name('admin.dashboard.notifikasi.markAsCancel');

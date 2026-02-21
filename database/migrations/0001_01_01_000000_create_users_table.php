@@ -14,11 +14,15 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('nama_kabupaten')->nullable();
+            $table->string('kode_kabupaten', 10)->nullable()->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('role')->default('kabupaten');
             $table->integer('anggota');
+            $table->integer('jumlah_anggota')->default(0);
+            $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');
 
             $table->rememberToken();
             $table->timestamps();

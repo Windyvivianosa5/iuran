@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\Iuran;
 use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,8 +24,12 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
-        'kabupaten_id',
         'anggota',
+        'nama_kabupaten',
+        'kode_kabupaten',
+        'jumlah_anggota',
+        'status',
+        'email_verified_at',
     ];
 
     /**
@@ -49,16 +52,8 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'jumlah_anggota' => 'integer',
         ];
-    }
-
-    public function iuran():HasMany
-    {
-        return $this->hasMany(Iuran::class,'kabupaten_id');
-    }
-
-    public function payments() {
-        return $this->hasMany(Payment::class);
     }
 
     public function transactions(): HasMany

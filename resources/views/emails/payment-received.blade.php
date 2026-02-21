@@ -6,183 +6,263 @@
     <title>Pembayaran Baru Diterima</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
+            color: #202124;
+            background-color: #f5f5f5;
             margin: 0;
             padding: 0;
         }
-        .container {
+        .email-wrapper {
             max-width: 600px;
-            margin: 20px auto;
-            background: #ffffff;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            background-color: #ffffff;
         }
-        .header {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+        .email-header {
+            padding: 24px 40px;
+            border-bottom: 1px solid #e8eaed;
         }
-        .header h1 {
+        .logo-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 500;
+            color: #1a73e8;
             margin: 0;
-            font-size: 24px;
         }
-        .notification-icon {
-            font-size: 60px;
-            margin: 10px 0;
+        .admin-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background-color: #fef7e0;
+            color: #b06000;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
         }
-        .content {
-            padding: 30px;
+        .email-body {
+            padding: 32px 40px;
         }
-        .alert-box {
-            background: #d1ecf1;
-            border-left: 4px solid #0c5460;
-            padding: 15px;
-            margin: 20px 0;
+        .notification-banner {
+            background-color: #e8f0fe;
+            border-left: 4px solid #1a73e8;
+            padding: 16px;
+            margin: 0 0 24px 0;
             border-radius: 4px;
         }
-        .info-row {
+        .notification-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+        .notification-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1967d2;
+            margin: 0 0 4px 0;
+        }
+        .notification-text {
+            font-size: 14px;
+            color: #174ea6;
+            margin: 0;
+        }
+        .kabupaten-highlight {
+            font-size: 20px;
+            font-weight: 500;
+            color: #202124;
+            margin: 24px 0 16px 0;
+            text-align: center;
+        }
+        .amount-display {
+            font-size: 36px;
+            font-weight: 400;
+            color: #202124;
+            text-align: center;
+            margin: 16px 0 24px 0;
+            letter-spacing: -0.5px;
+        }
+        .details-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .details-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            margin: 0 0 16px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .detail-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #e9ecef;
+            padding: 12px 0;
+            border-bottom: 1px solid #e8eaed;
         }
-        .info-row:last-child {
+        .detail-row:last-child {
             border-bottom: none;
         }
-        .info-label {
-            font-weight: 600;
-            color: #666;
+        .detail-label {
+            font-size: 14px;
+            color: #5f6368;
+            margin: 0 5px 0 0;
         }
-        .info-value {
-            color: #333;
+        .detail-value {
+            font-size: 14px;
+            color: #202124;
             text-align: right;
+            font-weight: 400;
         }
-        .amount {
-            font-size: 32px;
-            font-weight: bold;
-            color: #f5576c;
-            text-align: center;
-            margin: 20px 0;
+        .detail-value code {
+            background-color: #e8eaed;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
         }
-        .button {
+        .status-badge {
             display: inline-block;
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .button:hover {
-            opacity: 0.9;
-        }
-        .footer {
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
+            padding: 4px 12px;
+            background-color: #e6f4ea;
+            color: #137333;
+            border-radius: 12px;
             font-size: 12px;
-            color: #666;
+            font-weight: 500;
         }
-        .kabupaten-name {
-            font-size: 20px;
-            font-weight: bold;
-            color: #f5576c;
+        .action-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #1a73e8;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            margin: 24px 0;
+        }
+        .action-button:hover {
+            background-color: #1765cc;
+        }
+        .info-box {
+            background-color: #e6f4ea;
+            border-left: 4px solid #1e8e3e;
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 4px;
+        }
+        .info-box-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #137333;
+            margin: 0 0 8px 0;
+        }
+        .info-box ul {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            font-size: 14px;
+            color: #174ea6;
+            margin: 4px 0;
+        }
+        .note-text {
+            font-size: 13px;
+            color: #5f6368;
+            margin: 24px 0 0 0;
+            font-style: italic;
+        }
+        .email-footer {
+            padding: 24px 40px;
+            border-top: 1px solid #e8eaed;
+            background-color: #f8f9fa;
+        }
+        .footer-text {
+            font-size: 12px;
+            color: #5f6368;
             text-align: center;
-            margin: 10px 0;
+            margin: 4px 0;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            
-            <h1>Pembayaran Baru Diterima!</h1>
-            <p>Notifikasi untuk Admin PGRI</p>
+    <div class="email-wrapper">
+        <div class="email-header">
+            <div class="logo-area">
+                <h1 class="logo-text">PGRI Provinsi Riau</h1>
+                <span class="admin-badge">Admin</span>
+            </div>
         </div>
 
-        <div class="content">
-            <div class="alert-box">
-                <strong>Notifikasi Pembayaran</strong>
-                <p style="margin: 10px 0 0 0;">Ada pembayaran iuran baru yang telah berhasil diproses melalui Midtrans.</p>
+        <div class="email-body">
+            <div class="notification-banner">
+                <h4 class="notification-title">Notifikasi Pembayaran Baru</h4>
+                <p class="notification-text">Ada pembayaran iuran yang telah berhasil diproses dan diverifikasi secara otomatis.</p>
             </div>
 
-            <div class="kabupaten-name">
-                {{ $user->name }}
-            </div>
+            <p class="kabupaten-highlight">{{ $user->name }}</p>
 
-            <div class="amount">
+            <div class="amount-display">
                 Rp {{ number_format($transaction->gross_amount, 0, ',', '.') }}
             </div>
 
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                <h3 style="margin-top: 0; color: #666;">Detail Transaksi</h3>
-                
-                <div class="info-row">
-                    <span class="info-label">Order ID</span>
-                    <span class="info-value"><code>{{ $transaction->order_id }}</code></span>
+            <div class="details-section">
+                <h3 class="details-title">Detail Transaksi</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Order ID : </span>
+                    <span class="detail-value"><code>{{ $transaction->order_id }}</code></span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Transaction ID</span>
-                    <span class="info-value"><code>{{ $transaction->transaction_id ?? '-' }}</code></span>
+                <div class="detail-row">
+                    <span class="detail-label">Transaction ID : </span>
+                    <span class="detail-value"><code>{{ $transaction->transaction_id ?? '-' }}</code></span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Kabupaten/Kota</span>
-                    <span class="info-value">{{ $user->name }}</span>
+                <div class="detail-row">
+                    <span class="detail-label">Kabupaten/Kota : </span>
+                    <span class="detail-value">{{ $user->name }}</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Email</span>
-                    <span class="info-value">{{ $user->email }}</span>
+                <div class="detail-row">
+                    <span class="detail-label">Email : </span>
+                    <span class="detail-value">{{ $user->email }}</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Tanggal Pembayaran</span>
-                    <span class="info-value">{{ \Carbon\Carbon::parse($transaction->created_at)->format('d F Y, H:i') }} WIB</span>
+                <div class="detail-row">
+                    <span class="detail-label">Tanggal Pembayaran : </span>
+                    <span class="detail-value">{{ \Carbon\Carbon::parse($transaction->created_at)->format('d M Y, H:i') }} WIB</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Metode Pembayaran</span>
-                    <span class="info-value">{{ ucwords(str_replace('_', ' ', $transaction->payment_type ?? 'Midtrans')) }}</span>
+                <div class="detail-row">
+                    <span class="detail-label">Metode Pembayaran : </span>
+                    <span class="detail-value">{{ ucwords(str_replace('_', ' ', $transaction->payment_type ?? 'Midtrans')) }}</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Deskripsi</span>
-                    <span class="info-value">{{ $transaction->description }}</span>
+                <div class="detail-row">
+                    <span class="detail-label">Deskripsi : </span>
+                    <span class="detail-value">{{ $transaction->description }}</span>
                 </div>
-                <div class="info-row">
-                    <span class="info-label">Status</span>
-                    <span class="info-value">
-                        <span style="display: inline-block; padding: 5px 15px; background: #28a745; color: white; border-radius: 20px; font-size: 12px; font-weight: bold;">
-                            SETTLEMENT
-                        </span>
-                    </span>
+                <div class="detail-row">
+                    <span class="detail-label">Status : </span>
+                    <span class="detail-value"><span class="status-badge">Settlement</span></span>
                 </div>
             </div>
 
-            <p style="text-align: center;">
-                <a href="{{ $dashboardUrl }}" class="button">Buka Dashboard Admin</a>
-            </p>
-
-            <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                <strong>Informasi:</strong>
-                <ul style="margin: 10px 0; padding-left: 20px;">
-                    <li>Pembayaran telah terverifikasi otomatis oleh Midtrans</li>
-                    <li>Data telah masuk ke sistem dan dashboard</li>
-                    <li>Tidak perlu approval manual</li>
+            <div class="info-box">
+                <h4 class="info-box-title">Informasi</h4>
+                <ul>
+                    <li>Pembayaran telah terverifikasi otomatis oleh sistem Midtrans</li>
+                    <li>Data transaksi sudah masuk ke database dan dashboard</li>
+                    <li>Tidak diperlukan approval atau konfirmasi manual</li>
                 </ul>
             </div>
 
-            <p style="color: #666; font-size: 14px;">
-                <strong>Catatan:</strong> Email ini dikirim otomatis setiap ada pembayaran baru yang berhasil diproses.
+            <p class="note-text">
+                <strong>Catatan:</strong> Email ini dikirim secara otomatis setiap ada pembayaran baru yang berhasil diproses.
             </p>
         </div>
 
-        <div class="footer">
-            <p><strong>PGRI Provinsi Riau - Admin Dashboard</strong></p>
-            <p>Email ini dikirim otomatis oleh sistem. Mohon tidak membalas email ini.</p>
-            <p>&copy; {{ date('Y') }} PGRI Riau. All rights reserved.</p>
+        <div class="email-footer">
+            <p class="footer-text"><strong>PGRI Provinsi Riau - Admin Dashboard</strong></p>
+            <p class="footer-text">Email ini dikirim secara otomatis. Mohon tidak membalas email ini.</p>
+            <p class="footer-text">&copy; {{ date('Y') }} PGRI Provinsi Riau. Semua hak dilindungi.</p>
         </div>
     </div>
 </body>

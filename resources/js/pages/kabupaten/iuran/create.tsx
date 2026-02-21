@@ -49,7 +49,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Create() {
-    const { midtransClientKey } = usePage<PageProps>().props;
+    const { midtransClientKey, isActive } = usePage<PageProps>().props;
     const [amount, setAmount] = React.useState('');
     const [description, setDescription] = React.useState('');
     const [isProcessing, setIsProcessing] = React.useState(false);
@@ -58,8 +58,15 @@ export default function Create() {
 
     // Load Midtrans Snap script
     React.useEffect(() => {
-        console.log('Midtrans Client Key:', midtransClientKey);
-        
+        // Check if account is inactive - redirect to iuran list
+        if (isActive === "nonaktif") {
+            toast.error('Akun Anda tidak aktif. Silakan hubungi administrator.');
+            setTimeout(() => {
+                router.visit('/kabupaten/dashboard/iuran');
+            }, 2000);
+            return;
+        }
+
         if (!midtransClientKey || midtransClientKey === '') {
             console.error('Midtrans Client Key is not configured!');
             setConfigError(true);
@@ -71,7 +78,6 @@ export default function Create() {
         script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
         script.setAttribute('data-client-key', midtransClientKey);
         script.onload = () => {
-            console.log('Midtrans Snap.js loaded successfully');
         };
         script.onerror = () => {
             console.error('Failed to load Midtrans Snap.js');
@@ -84,7 +90,7 @@ export default function Create() {
                 document.body.removeChild(script);
             }
         };
-    }, [midtransClientKey]);
+    }, [midtransClientKey, isActive]);
 
     const handlePayment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -247,7 +253,7 @@ export default function Create() {
                                         id="amount"
                                         placeholder="0"
                                         value={formatNumber(amount)}
-                                        onChange={(e) => setAmount(e.target.value)}
+                                        onChange={(e) => setAmount(e.currentTarget.value)}
                                         className="h-12 pl-12 text-lg font-semibold"
                                         required
                                     />
@@ -264,7 +270,7 @@ export default function Create() {
                                     id="description"
                                     placeholder="Contoh: Iuran Bulan Desember 2025"
                                     value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    onChange={(e) => setDescription(e.currentTarget.value)}
                                     className="min-h-[100px]"
                                 />
                                 <p className="text-xs text-gray-500">Opsional - Tambahkan catatan untuk pembayaran ini</p>

@@ -2,448 +2,451 @@
 
 ## Daftar Sequence Diagram
 
-Dokumen ini berisi beberapa sequence diagram untuk proses-proses utama dalam Sistem Iuran PGRI:
+Dokumen ini berisi **2 sequence diagram utama** yang merepresentasikan proses inti dalam Sistem Iuran PGRI:
 
-1. [Proses Login](#1-proses-login)
-2. [Proses Pembayaran Iuran via Midtrans](#2-proses-pembayaran-iuran-via-midtrans)
-3. [Proses Webhook Midtrans](#3-proses-webhook-midtrans)
-4. [Proses Tambah Iuran Manual](#4-proses-tambah-iuran-manual)
-5. [Proses Verifikasi Pembayaran oleh Admin](#5-proses-verifikasi-pembayaran-oleh-admin)
-6. [Proses Lihat Laporan Iuran](#6-proses-lihat-laporan-iuran)
+1. [Sequence Diagram: Proses Pembayaran Iuran via Midtrans](#1-sequence-diagram-proses-pembayaran-iuran-via-midtrans)
+2. [Sequence Diagram: Proses Webhook Midtrans Notification](#2-sequence-diagram-proses-webhook-midtrans-notification)
 
 ---
 
-## 1. Proses Login
+## 1. Sequence Diagram: Proses Pembayaran Iuran via Midtrans
 
 ### Deskripsi
-Sequence diagram untuk proses autentikasi pengguna (Kabupaten dan Admin)
+Diagram ini menunjukkan **interaksi antar komponen sistem** saat Kabupaten melakukan pembayaran iuran melalui Midtrans Payment Gateway. Diagram mencakup:
+- Request pembayaran dari user
+- Komunikasi dengan Midtrans API
+- Proses pembayaran melalui Snap
+- Webhook notification handling
+- Auto-create iuran record
+- Email notification
 
 ### PlantUML Code
 
 ```plantuml
 @startuml
-title Sequence Diagram - Proses Login
+title Sequence Diagram - Proses Pembayaran Iuran via Midtrans
 
-actor User
+actor "Kabupaten" as User
 participant "Browser" as Browser
-participant "AuthController" as Auth
-participant "Middleware" as MW
+participant "IuranController" as Controller
 participant "Database" as DB
-participant "Session" as Session
+participant "MidtransService" as Midtrans
+participant "Snap Midtrans\n(Payment Page)" as Snap
+participant "WebhookController" as Webhook
+participant "MailService" as Mail
+actor "Admin" as Admin
 
-User -> Browser: Buka halaman login
-Browser -> Auth: GET /login
-Auth --> Browser: Tampilkan form login
+== Inisiasi Pembayaran ==
 
-User -> Browser: Input email & password\nKlik "Login"
-Browser -> Auth: POST /login\n{email, password}
+User -> Browser: Buka halaman pembayaran iuran
+Browser -> Controller: GET /kabupaten/iuran/create
+Controller --> Browser: Tampilkan form pembayaran
 
-Auth -> Auth: Validasi input
-alt Input tidak valid
-    Auth --> Browser: Return error validasi
-    Browser --> User: Tampilkan error
-else Input valid
-    Auth -> DB: Query user by email
-    DB --> Auth: Return user data
+User -> Browser: Input jumlah & deskripsi
+User -> Browser: Klik "Bayar"
+
+Browser -> Controller: POST /kabupaten/iuran/store\n{jumlah, deskripsi}
+
+== Validasi & Create Transaction ==
+
+Controller -> Controller: Validasi input
+note right
+  - Required: jumlah
+  - Numeric & min: 1000
+  - Max: 100000000
+end note
+
+Controller -> DB: Generate Order ID unik
+DB --> Controller: ORDER-{timestamp}-{user_id}
+
+Controller -> DB: INSERT INTO transaksi_midtrans\n(order_id, user_id, gross_amount,\ndescription, status='pending')
+DB --> Controller: Transaction created
+
+== Request Snap Token ke Midtrans ==
+
+Controller -> Midtrans: POST /snap/v1/transactions\n{\n  transaction_details: {order_id, gross_amount},\n  customer_details: {name, email, phone}\n}
+
+Midtrans -> Midtrans: Generate Snap Token
+Midtrans -> Midtrans: Create payment session
+
+Midtrans --> Controller: Response:\n{\n  token: "snap_token_xxx",\n  redirect_url: "https://app.midtrans.com/snap/v2/..."\n}
+
+Controller -> DB: UPDATE transaksi_midtrans\nSET snap_token = "snap_token_xxx"
+DB --> Controller: Updated
+
+Controller --> Browser: Response:\n{\n  snap_token: "snap_token_xxx",\n  order_id: "ORDER-xxx"\n}
+
+== Proses Pembayaran di Midtrans ==
+
+Browser -> Browser: Load Midtrans Snap.js
+Browser -> Snap: snap.pay('snap_token_xxx')
+
+Snap --> User: Tampilkan popup pembayaran
+note right
+  Metode pembayaran:
+  - Credit Card
+  - Bank Transfer
+  - E-Wallet (GoPay, OVO, Dana)
+  - QRIS
+  - Convenience Store
+end note
+
+User -> Snap: Pilih metode pembayaran
+User -> Snap: Input detail pembayaran
+User -> Snap: Konfirmasi pembayaran
+
+Snap -> Snap: Proses pembayaran
+Snap -> Snap: Validasi pembayaran
+
+alt Pembayaran Berhasil
+    Snap --> User: Tampilkan halaman sukses
+    Snap -> Webhook: POST /midtrans/notification\n(Webhook Notification)
+    note right
+      Webhook dipanggil otomatis
+      oleh Midtrans setelah
+      pembayaran berhasil
+    end note
     
-    alt User tidak ditemukan
-        Auth --> Browser: Return error "User tidak ditemukan"
-        Browser --> User: Tampilkan error
-    else User ditemukan
-        Auth -> Auth: Verify password
-        
-        alt Password salah
-            Auth --> Browser: Return error "Password salah"
-            Browser --> User: Tampilkan error
-        else Password benar
-            Auth -> Session: Create session
-            Session --> Auth: Session created
-            
-            Auth -> MW: Check user role
-            MW --> Auth: Role: kabupaten/admin/user
-            
-            alt Role = kabupaten
-                Auth --> Browser: Redirect /kabupaten/dashboard
-            else Role = admin
-                Auth --> Browser: Redirect /admin/dashboard
-            else Role = user
-                Auth --> Browser: Redirect /dashboard
-            end
-            
-            Browser --> User: Tampilkan dashboard
-        end
-    end
+    User -> Browser: Klik "Kembali ke Merchant"
+    Browser -> Controller: GET /kabupaten/iuran (redirect)
+    Controller --> Browser: Tampilkan daftar transaksi
+    
+else Pembayaran Gagal/Dibatalkan
+    Snap --> User: Tampilkan halaman gagal
+    Snap -> Webhook: POST /midtrans/notification\n(status: cancel/deny/expire)
+    
+    User -> Browser: Klik "Coba Lagi"
+    Browser -> Controller: GET /kabupaten/iuran
+    Controller --> Browser: Tampilkan daftar transaksi
 end
+
+== Webhook Processing (Async) ==
+
+note over Webhook
+  Proses ini berjalan secara asynchronous
+  setelah Midtrans mengirim notifikasi
+  (Detail di Sequence Diagram #2)
+end note
+
+Webhook -> DB: UPDATE transaksi_midtrans\nSET status = 'settlement'
+Webhook -> DB: INSERT INTO iurans\n(auto-create record)
+Webhook -> Mail: Send email ke Kabupaten
+Webhook -> Mail: Send email ke Admin
+
+Mail --> User: Email: "Pembayaran Berhasil"
+Mail --> Admin: Email: "Pembayaran Baru Diterima"
 
 @enduml
 ```
 
+### Penjelasan Detail
+
+#### Participants (Objek yang Terlibat):
+1. **Kabupaten (Actor)**: User yang melakukan pembayaran
+2. **Browser**: Interface pengguna (React/Inertia.js)
+3. **IuranController**: Controller Laravel untuk handle request pembayaran
+4. **Database**: MySQL/PostgreSQL untuk penyimpanan data transaksi
+5. **MidtransService**: Service untuk komunikasi dengan Midtrans API
+6. **Snap Midtrans**: Payment page dari Midtrans (external)
+7. **WebhookController**: Controller untuk handle webhook notification
+8. **MailService**: Service untuk kirim email (Laravel Mail)
+9. **Admin (Actor)**: Penerima notifikasi email
+
+#### Alur Proses:
+
+**1. Inisiasi Pembayaran (Lines 1-10)**
+- User membuka halaman pembayaran
+- Input jumlah dan deskripsi
+- Submit form pembayaran
+
+**2. Validasi & Create Transaction (Lines 11-18)**
+- Sistem validasi input (required, numeric, min/max)
+- Generate Order ID unik dengan format: `ORDER-{timestamp}-{user_id}`
+- Insert data transaksi ke database dengan status `pending`
+
+**3. Request Snap Token (Lines 19-28)**
+- Kirim request ke Midtrans API dengan data:
+  - `transaction_details`: order_id, gross_amount
+  - `customer_details`: name, email, phone
+- Midtrans generate Snap Token
+- Update transaksi dengan Snap Token
+- Return token ke browser
+
+**4. Proses Pembayaran (Lines 29-45)**
+- Browser load Midtrans Snap.js library
+- Tampilkan popup pembayaran dengan berbagai metode
+- User pilih metode dan konfirmasi pembayaran
+- Midtrans proses pembayaran
+
+**5. Webhook Processing (Lines 46-54)**
+- Jika berhasil: Midtrans kirim webhook notification
+- Sistem update status transaksi
+- Auto-create iuran record
+- Kirim email notifikasi ke Kabupaten dan Admin
+
+#### Keunggulan yang Ditunjukkan:
+- ✅ **Otomasi penuh** dari input hingga verifikasi
+- ✅ **Real-time notification** via webhook
+- ✅ **No manual intervention** needed
+- ✅ **Secure payment** dengan Snap Token
+- ✅ **Multiple payment methods** (Credit Card, Bank Transfer, E-Wallet, QRIS)
+
 ---
 
-## 2. Proses Pembayaran Iuran via Midtrans
+## 2. Sequence Diagram: Proses Webhook Midtrans Notification
 
 ### Deskripsi
-Sequence diagram untuk proses pembayaran iuran menggunakan Midtrans Payment Gateway
+Diagram ini menunjukkan **detail proses handling webhook notification** dari Midtrans. Ini adalah **inti dari otomasi sistem** yang menggantikan verifikasi manual. Diagram mencakup:
+- Parsing notification data
+- Validasi signature (security)
+- Status mapping
+- Auto-verification logic
+- Auto-create iuran record
+- Email notification trigger
 
 ### PlantUML Code
 
 ```plantuml
 @startuml
-title Sequence Diagram - Proses Pembayaran via Midtrans
-
-actor Kabupaten
-participant "Browser" as Browser
-participant "TransactionController" as TC
-participant "Database" as DB
-participant "Midtrans API" as Midtrans
-participant "Snap Payment Page" as Snap
-
-Kabupaten -> Browser: Buka halaman pembayaran
-Browser -> TC: GET /kabupaten/dashboard/iuran/create
-TC --> Browser: Tampilkan form pembayaran
-
-Kabupaten -> Browser: Input jumlah & deskripsi\nKlik "Bayar"
-Browser -> TC: POST /kabupaten/transaction/create\n{amount, description}
-
-TC -> TC: Validasi input
-alt Input tidak valid
-    TC --> Browser: Return error validasi
-    Browser --> Kabupaten: Tampilkan error
-else Input valid
-    TC -> TC: Generate Order ID\n(TRX-{user_id}-{timestamp})
-    
-    TC -> DB: INSERT transaction\n(status: pending)
-    DB --> TC: Transaction created
-    
-    TC -> TC: Prepare Midtrans params\n{order_id, amount, customer}
-    
-    TC -> Midtrans: POST /snap/v1/transactions\ngetSnapToken(params)
-    Midtrans -> Midtrans: Validate & process request
-    Midtrans --> TC: Return snap_token
-    
-    TC -> DB: UPDATE transaction\nSET snap_token = ?
-    DB --> TC: Updated
-    
-    TC --> Browser: Return JSON\n{success: true, snap_token, order_id}
-    
-    Browser -> Snap: Open Snap Payment Page\nwith snap_token
-    Snap --> Kabupaten: Tampilkan pilihan pembayaran
-    
-    Kabupaten -> Snap: Pilih metode & bayar
-    Snap -> Midtrans: Process payment
-    
-    alt Pembayaran berhasil
-        Midtrans --> Snap: Payment success
-        Snap --> Browser: Redirect ke success page
-        Browser --> Kabupaten: Tampilkan halaman sukses
-        
-        note right of Midtrans
-            Midtrans akan mengirim
-            webhook notification
-            (lihat diagram webhook)
-        end note
-        
-    else Pembayaran gagal/dibatalkan
-        Midtrans --> Snap: Payment failed
-        Snap --> Browser: Redirect ke failure page
-        Browser --> Kabupaten: Tampilkan halaman gagal
-    end
-end
-
-@enduml
-```
-
----
-
-## 3. Proses Webhook Midtrans
-
-### Deskripsi
-Sequence diagram untuk proses handling webhook notification dari Midtrans setelah pembayaran
-
-### PlantUML Code
-
-```plantuml
-@startuml
-title Sequence Diagram - Webhook Midtrans Notification
+title Sequence Diagram - Proses Webhook Midtrans Notification
 
 participant "Midtrans Server" as Midtrans
-participant "TransactionController" as TC
+participant "WebhookController" as Webhook
+participant "MidtransService" as Service
 participant "Database" as DB
-participant "Iuran Model" as Iuran
-participant "Mail Service" as Mail
-participant "Kabupaten Email" as KabEmail
-participant "Admin Email" as AdminEmail
+participant "IuranModel" as IuranModel
+participant "MailService" as Mail
+participant "Log" as Log
 
-Midtrans -> TC: POST /midtrans/notification\n{transaction data}
+== Webhook Notification Received ==
 
-TC -> TC: Parse notification\nCreate Notification object
+Midtrans -> Webhook: POST /midtrans/notification
+note right
+  Payload:
+  - order_id
+  - transaction_status
+  - transaction_id
+  - gross_amount
+  - payment_type
+  - fraud_status
+  - signature_key
+end note
 
-TC -> TC: Extract data:\n- transaction_status\n- order_id\n- fraud_status\n- transaction_id\n- payment_type
+Webhook -> Log: Log incoming webhook
+Webhook -> Webhook: Parse JSON notification
 
-TC -> DB: SELECT * FROM transactions\nWHERE order_id = ?
-DB --> TC: Return transaction
+== Validate Signature ==
 
-alt Transaction tidak ditemukan
-    TC -> TC: Log error
-    TC --> Midtrans: Return 404
-else Transaction ditemukan
-    TC -> DB: UPDATE transaction\nSET transaction_id, payment_type,\ntransaction_time
-    DB --> TC: Updated
+Webhook -> Service: validateSignature(notification)
+Service -> Service: Generate hash from data + server_key
+Service -> Service: Compare with signature_key
+Service --> Webhook: Signature valid
+
+== Find Transaction ==
+
+Webhook -> DB: SELECT * FROM transaksi_midtrans WHERE order_id = ?
+DB --> Webhook: Transaction data
+
+alt Transaction Not Found
+    Webhook -> Log: Log error "Transaction not found"
+    Webhook --> Midtrans: HTTP 404 Not Found
+else Transaction Found
+    Webhook -> DB: UPDATE transaction_id, payment_type, transaction_time
+    DB --> Webhook: Updated
     
-    alt Status = capture
-        alt Fraud status = accept
-            TC -> DB: UPDATE status = 'settlement'
-            DB --> TC: Updated
-        else Fraud status != accept
-            TC -> DB: UPDATE status = 'pending'
-            DB --> TC: Updated
+    alt Status = "settlement"
+        Webhook -> DB: UPDATE status = 'settlement', settlement_time = NOW()
+        DB --> Webhook: Status updated
+        
+        Webhook -> DB: SELECT * FROM iurans WHERE bukti_transaksi = order_id
+        DB --> Webhook: Check if exists
+        
+        alt Iuran Not Exists
+            Webhook -> DB: SELECT kabupaten_id FROM users WHERE id = user_id
+            DB --> Webhook: kabupaten_id
+            
+            Webhook -> IuranModel: Create Iuran
+            note right
+              Data:
+              - kabupaten_id
+              - jumlah: gross_amount
+              - tanggal: NOW()
+              - terverifikasi: 'diterima'
+              - bukti_transaksi: order_id
+            end note
+            
+            IuranModel -> DB: INSERT INTO iurans
+            DB --> IuranModel: Iuran created
+            Webhook -> Log: Log "Iuran auto-created"
+        else Iuran Exists
+            Webhook -> Log: Log "Iuran already exists, skip"
         end
         
-    else Status = settlement
-        TC -> DB: UPDATE status = 'settlement'\nSET settlement_time = NOW()
-        DB --> TC: Updated
+        Webhook -> Mail: sendPaymentSuccessEmail(kabupaten)
+        Mail --> Webhook: Email sent to Kabupaten
         
-        TC -> Iuran: createIuranFromTransaction(transaction)
+        Webhook -> Mail: sendPaymentNotificationToAdmin()
+        Mail --> Webhook: Email sent to Admin
         
-        Iuran -> DB: SELECT iuran WHERE\nkabupaten_id = ? AND\njumlah = ? AND tanggal = ?
-        DB --> Iuran: Check if exists
+        Webhook -> Log: Log "Settlement processed successfully"
+        Webhook --> Midtrans: HTTP 200 OK
         
-        alt Iuran belum ada
-            Iuran -> DB: INSERT INTO iuran\n(kabupaten_id, jumlah, tanggal,\ndeskripsi, terverifikasi='diterima',\nbukti_transaksi)
-            DB --> Iuran: Iuran created
-            Iuran -> Iuran: Log "Iuran created"
-        else Iuran sudah ada
-            Iuran -> Iuran: Log "Iuran already exists"
+    else Status = "capture"
+        alt Fraud Status = "accept"
+            Webhook -> DB: UPDATE status = 'settlement'
+            note right: Treat as settlement
+        else Fraud Status != "accept"
+            Webhook -> DB: UPDATE status = 'pending'
+            Webhook -> Log: Log "Fraud detected"
         end
+        Webhook --> Midtrans: HTTP 200 OK
         
-        Iuran --> TC: Return
+    else Status = "pending"
+        Webhook -> DB: UPDATE status = 'pending'
+        Webhook -> Log: Log "Payment pending"
+        Webhook --> Midtrans: HTTP 200 OK
         
-        TC -> Mail: Send PaymentSuccessNotification\nto Kabupaten
-        Mail -> KabEmail: Email: Pembayaran Berhasil\n{order_id, amount, status}
-        KabEmail --> Mail: Email sent
-        Mail --> TC: Success
+    else Status = "deny"
+        Webhook -> DB: UPDATE status = 'deny'
+        Webhook -> Log: Log "Payment denied"
+        Webhook --> Midtrans: HTTP 200 OK
         
-        TC -> Mail: Send PaymentReceivedNotification\nto Admin
-        Mail -> AdminEmail: Email: Pembayaran Baru\n{kabupaten, amount, date}
-        AdminEmail --> Mail: Email sent
-        Mail --> TC: Success
+    else Status = "expire"
+        Webhook -> DB: UPDATE status = 'expire'
+        Webhook -> Log: Log "Payment expired"
+        Webhook --> Midtrans: HTTP 200 OK
         
-    else Status = pending
-        TC -> DB: UPDATE status = 'pending'
-        DB --> TC: Updated
-        
-    else Status = deny
-        TC -> DB: UPDATE status = 'deny'
-        DB --> TC: Updated
-        
-    else Status = expire
-        TC -> DB: UPDATE status = 'expire'
-        DB --> TC: Updated
-        
-    else Status = cancel
-        TC -> DB: UPDATE status = 'cancel'
-        DB --> TC: Updated
+    else Status = "cancel"
+        Webhook -> DB: UPDATE status = 'cancel'
+        Webhook -> Log: Log "Payment cancelled"
+        Webhook --> Midtrans: HTTP 200 OK
     end
-    
-    TC -> TC: Log status update
-    TC --> Midtrans: Return 200 OK\n{success: true}
 end
 
 @enduml
 ```
+
+### Penjelasan Detail
+
+#### Participants (Objek yang Terlibat):
+1. **Midtrans Server**: Server Midtrans yang mengirim webhook
+2. **WebhookController**: Endpoint `/midtrans/notification` di Laravel
+3. **MidtransService**: Service untuk validasi signature
+4. **Database**: Penyimpanan data transaksi dan iuran
+5. **Iuran Model**: Model Eloquent untuk create record iuran
+6. **MailService**: Service untuk kirim email
+7. **Log**: System logging untuk debugging
+
+#### Alur Proses:
+
+**1. Webhook Notification Received (Lines 1-6)**
+- Midtrans kirim POST request ke `/midtrans/notification`
+- Payload berisi: order_id, transaction_status, transaction_id, gross_amount, payment_type, transaction_time, fraud_status, signature_key
+- Sistem log incoming webhook untuk audit trail
+
+**2. Parse & Validate Notification (Lines 7-14)**
+- Parse JSON notification data
+- Extract data penting (order_id, status, fraud_status)
+- **Validasi signature** untuk keamanan:
+  - Generate hash dari data + server_key
+  - Compare dengan signature_key dari Midtrans
+  - Jika tidak match → reject request (prevent fraud)
+
+**3. Find Transaction (Lines 15-22)**
+- Cari transaksi berdasarkan order_id
+- Jika tidak ditemukan → return HTTP 404
+- Jika ditemukan → lanjut proses
+
+**4. Update Transaction Data (Lines 23-26)**
+- Update transaction_id dari Midtrans
+- Update payment_type (bank_transfer, gopay, credit_card, dll)
+- Update transaction_time
+
+**5. Process Transaction Status (Lines 27-70)**
+
+**Status Mapping:**
+
+| Midtrans Status | Action | Sistem Status |
+|----------------|--------|---------------|
+| `capture` + fraud=accept | Update status, create iuran | `settlement` |
+| `capture` + fraud≠accept | Update status, pending review | `pending` |
+| `settlement` | Update status, create iuran, send email | `settlement` |
+| `pending` | Update status | `pending` |
+| `deny` | Update status | `deny` |
+| `expire` | Update status | `expire` |
+| `cancel` | Update status | `cancel` |
+
+**6. Auto-Create Iuran Record (Lines 35-50)**
+- **Cek duplikasi**: Query iuran berdasarkan bukti_transaksi (order_id)
+- **Jika belum ada**:
+  - Get kabupaten_id dari user_id
+  - Create record iuran baru dengan:
+    - `kabupaten_id`: dari user
+    - `jumlah`: dari gross_amount
+    - `tanggal`: NOW()
+    - `deskripsi`: dari description
+    - `terverifikasi`: **'diterima'** (auto-approved!)
+    - `bukti_transaksi`: order_id
+  - Log "Iuran auto-created"
+- **Jika sudah ada**: Skip create (idempotency)
+
+**7. Send Email Notifications (Lines 51-64)**
+- **Parallel processing** untuk efisiensi
+- Email ke Kabupaten:
+  - Subject: "Pembayaran Berhasil"
+  - Content: Detail transaksi (order_id, amount, status)
+- Email ke Admin:
+  - Subject: "Pembayaran Baru Diterima"
+  - Content: Info pembayaran baru (kabupaten, amount, date)
+
+**8. Response (Lines 65-70)**
+- Log status update
+- Return HTTP 200 OK ke Midtrans
+- Midtrans akan retry jika tidak dapat 200 OK
+
+#### Keunggulan yang Ditunjukkan:
+
+**1. Security (Keamanan)**
+- ✅ Signature validation untuk mencegah fraud
+- ✅ Hanya terima request dari Midtrans server
+- ✅ Validasi order_id sebelum proses
+
+**2. Automation (Otomasi)**
+- ✅ **Auto-verification** - Tanpa campur tangan admin
+- ✅ **Auto-create iuran** - Langsung status 'diterima'
+- ✅ **Auto-notification** - Email otomatis ke Kabupaten & Admin
+
+**3. Reliability (Keandalan)**
+- ✅ **Idempotency** - Cek duplikasi sebelum create
+- ✅ **Error handling** - Logging untuk debugging
+- ✅ **Status mapping** - Handle semua kemungkinan status
+
+**4. Performance (Performa)**
+- ✅ **Parallel email sending** - Kirim email bersamaan
+- ✅ **Asynchronous processing** - Tidak block user experience
+- ✅ **Efficient queries** - Minimal database hits
+
+**5. Audit Trail**
+- ✅ **Comprehensive logging** - Log setiap step
+- ✅ **Transaction history** - Semua perubahan status tercatat
+- ✅ **Email records** - Bukti notifikasi terkirim
 
 ---
 
-## 4. Proses Tambah Iuran Manual
+## Perbandingan: Activity vs Sequence Diagram
 
-### Deskripsi
-Sequence diagram untuk proses menambah data iuran secara manual dengan upload bukti transfer
+| Aspek | Activity Diagram | Sequence Diagram |
+|-------|------------------|------------------|
+| **Fokus** | Alur proses/workflow | Interaksi antar objek |
+| **Timeline** | Tidak ada timeline | Ada timeline (top-down) |
+| **Swimlane** | Actor/Sistem/Pihak Ketiga | Participant/Object |
+| **Detail Teknis** | Rendah-Sedang | Tinggi |
+| **Use Case** | Menjelaskan "apa yang terjadi" | Menjelaskan "bagaimana terjadi" |
+| **Audience** | Business stakeholder | Technical team |
 
-### PlantUML Code
-
-```plantuml
-@startuml
-title Sequence Diagram - Tambah Iuran Manual
-
-actor Kabupaten
-participant "Browser" as Browser
-participant "KabupatenController" as KC
-participant "Request Validator" as Validator
-participant "Storage" as Storage
-participant "Database" as DB
-
-Kabupaten -> Browser: Klik "Tambah Iuran"
-Browser -> KC: GET /kabupaten/dashboard/iuran/create
-KC --> Browser: Tampilkan form tambah iuran
-
-Kabupaten -> Browser: Input data:\n- Jumlah\n- Tanggal\n- Upload bukti\n- Keterangan
-Kabupaten -> Browser: Klik "Simpan"
-
-Browser -> KC: POST /kabupaten/dashboard/iuran\n{jumlah, tanggal, bukti, keterangan}
-
-KC -> Validator: Validate request data
-Validator -> Validator: Check:\n- jumlah: required|integer|min:0\n- tanggal: required|date\n- bukti: required|file\n- keterangan: required|string
-
-alt Validasi gagal
-    Validator --> KC: Return validation errors
-    KC --> Browser: Return errors
-    Browser --> Kabupaten: Tampilkan error validasi
-else Validasi berhasil
-    Validator --> KC: Data valid
-    
-    KC -> Storage: Store file bukti\nPath: storage/bukti/
-    Storage -> Storage: Save file
-    Storage --> KC: Return file path
-    
-    KC -> KC: Get authenticated user_id
-    
-    KC -> DB: INSERT INTO iuran\n(kabupaten_id, jumlah, tanggal,\nbukti_transaksi, deskripsi,\nterverifikasi='pending')
-    DB --> KC: Iuran created
-    
-    KC --> Browser: Redirect to /kabupaten/dashboard/iuran\nwith success message
-    Browser --> Kabupaten: Tampilkan halaman index\ndengan pesan sukses
-end
-
-@enduml
-```
-
----
-
-## 5. Proses Verifikasi Pembayaran oleh Admin
-
-### Deskripsi
-Sequence diagram untuk proses verifikasi (approve/reject) pembayaran iuran oleh Admin
-
-### PlantUML Code
-
-```plantuml
-@startuml
-title Sequence Diagram - Verifikasi Pembayaran Admin
-
-actor Admin
-participant "Browser" as Browser
-participant "NotifikasiController" as NC
-participant "Database" as DB
-
-Admin -> Browser: Login & buka dashboard
-Browser -> NC: GET /admin/dashboard/notifikasi
-NC -> DB: SELECT * FROM iuran\nORDER BY created_at DESC
-DB --> NC: Return list iuran
-NC --> Browser: Tampilkan daftar notifikasi/iuran
-Browser --> Admin: Tampilkan list iuran
-
-Admin -> Browser: Klik detail iuran
-Browser -> NC: GET /admin/dashboard/notifikasi/{id}
-NC -> DB: SELECT * FROM iuran\nWHERE id = ?\nWITH kabupaten
-DB --> NC: Return iuran detail
-NC --> Browser: Tampilkan detail iuran
-Browser --> Admin: Tampilkan:\n- Jumlah\n- Tanggal\n- Bukti transaksi\n- Status\n- Data kabupaten
-
-alt Admin memilih ACC/Approve
-    Admin -> Browser: Klik "ACC"
-    Browser -> NC: POST /admin/notifikasi/acc/{id}
-    
-    NC -> DB: SELECT iuran WHERE id = ?
-    DB --> NC: Return iuran
-    
-    NC -> DB: UPDATE iuran\nSET terverifikasi = 'diterima'\nWHERE id = ?
-    DB --> NC: Updated
-    
-    NC --> Browser: Redirect back\nwith success message
-    Browser --> Admin: Tampilkan pesan:\n"Notifikasi dan terverifikasi\niuran telah dikonfirmasi"
-    
-else Admin memilih Tolak/Cancel
-    Admin -> Browser: Klik "Tolak"
-    Browser -> NC: POST /admin/dashboard/notifikasi/{id}/mark-as-cancel
-    
-    NC -> DB: SELECT iuran WHERE id = ?
-    DB --> NC: Return iuran
-    
-    NC -> DB: UPDATE iuran\nSET terverifikasi = 'ditolak'\nWHERE id = ?
-    DB --> NC: Updated
-    
-    NC --> Browser: Redirect back\nwith success message
-    Browser --> Admin: Tampilkan pesan:\n"Notifikasi dan status iuran\ntelah dibatalkan"
-    
-else Admin memilih ACC Semua
-    Admin -> Browser: Klik "ACC Semua"
-    Browser -> NC: POST /dashboard/notifikasi/mark-all-read
-    
-    NC -> DB: SELECT * FROM iuran\nWHERE terverifikasi = 'pending'
-    DB --> NC: Return list pending iuran
-    
-    loop Untuk setiap iuran pending
-        NC -> DB: UPDATE iuran\nSET terverifikasi = 'diterima'\nWHERE id = ?
-        DB --> NC: Updated
-    end
-    
-    NC --> Browser: Redirect back\nwith success message
-    Browser --> Admin: Tampilkan pesan:\n"Semua notifikasi berhasil di-ACC"
-end
-
-@enduml
-```
-
----
-
-## 6. Proses Lihat Laporan Iuran
-
-### Deskripsi
-Sequence diagram untuk proses melihat laporan iuran (untuk Kabupaten dan Admin)
-
-### PlantUML Code
-
-```plantuml
-@startuml
-title Sequence Diagram - Lihat Laporan Iuran
-
-actor User as "Kabupaten/Admin"
-participant "Browser" as Browser
-participant "Controller" as Controller
-participant "Database" as DB
-participant "Inertia" as Inertia
-
-User -> Browser: Klik menu "Laporan"
-
-alt User = Kabupaten
-    Browser -> Controller: GET /kabupaten/dashboard/laporan
-    Controller -> Controller: Get authenticated user_id
-    
-    Controller -> DB: SELECT * FROM iuran\nWHERE terverifikasi = 'diterima'\nWITH kabupaten
-    DB --> Controller: Return verified iuran list
-    
-    Controller -> DB: SELECT MONTH(tanggal) as bulan,\nSUM(jumlah) as total_iuran\nFROM iuran\nWHERE terverifikasi = 'diterima'\nGROUP BY MONTH(tanggal)\nORDER BY MONTH(tanggal)
-    DB --> Controller: Return monthly summary
-    
-    Controller -> Controller: Format data:\n- Map bulan ke nama bulan (Indonesia)\n- Format total_iuran
-    
-    Controller -> Inertia: Render 'kabupaten/laporan/index'\nwith {iuran, laporans}
-    Inertia --> Browser: Return page with data
-    
-else User = Admin
-    Browser -> Controller: GET /admin/dashboard
-    Controller -> Controller: Get statistics
-    
-    Controller -> DB: SELECT COUNT(*) FROM iuran\nWHERE terverifikasi = 'diterima'
-    DB --> Controller: Total verified iuran
-    
-    Controller -> DB: SELECT COUNT(*) FROM iuran\nWHERE terverifikasi = 'pending'
-    DB --> Controller: Total pending iuran
-    
-    Controller -> DB: SELECT SUM(jumlah) FROM iuran\nWHERE terverifikasi = 'diterima'
-    DB --> Controller: Total amount
-    
-    Controller -> DB: SELECT * FROM iuran\nORDER BY created_at DESC\nLIMIT 10
-    DB --> Controller: Recent transactions
-    
-    Controller -> Inertia: Render 'admin/dashboard'\nwith statistics
-    Inertia --> Browser: Return dashboard with charts
-end
-
-Browser --> User: Tampilkan laporan:\n- Tabel iuran\n- Grafik bulanan\n- Statistik
-
-@enduml
-```
+**Untuk Skripsi:**
+- **Activity Diagram** → Untuk menjelaskan business process ke pembimbing/penguji
+- **Sequence Diagram** → Untuk menunjukkan technical implementation detail
 
 ---
 
@@ -454,78 +457,110 @@ Browser --> User: Tampilkan laporan:\n- Tabel iuran\n- Grafik bulanan\n- Statist
 3. Salin kode PlantUML (dari `@startuml` sampai `@enduml`)
 4. Paste di editor PlantUML
 5. Diagram akan otomatis ter-generate
-6. Download diagram dalam format PNG, SVG, atau format lainnya
+6. Download diagram dalam format PNG atau SVG
 
-## Penjelasan Diagram
+**Alternative Tools:**
+- **VS Code Extension**: PlantUML (joekreydt.vscode-plantuml)
+- **IntelliJ IDEA**: PlantUML integration plugin
+- **Online Editor**: [PlantText](https://www.planttext.com/)
 
-### 1. Proses Login
-- Menggambarkan interaksi antara User, Browser, AuthController, Middleware, Database, dan Session
-- Menunjukkan alur validasi kredensial dan pembuatan session
-- Redirect berdasarkan role user
+---
 
-### 2. Proses Pembayaran via Midtrans
-- Interaksi lengkap dari input pembayaran sampai Snap Payment Page
-- Komunikasi dengan Midtrans API untuk mendapatkan Snap Token
-- Penyimpanan data transaksi ke database
-- Flow pembayaran di Snap Midtrans
+## Justifikasi untuk Skripsi
 
-### 3. Proses Webhook Midtrans
-- Detail teknis handling webhook notification dari Midtrans
-- Update status transaksi berdasarkan notification
-- Auto-create iuran record untuk pembayaran sukses
-- Pengiriman email notification ke Kabupaten dan Admin
+### Mengapa 2 Sequence Diagram Ini Penting?
 
-### 4. Proses Tambah Iuran Manual
-- Alur upload dan validasi data iuran manual
-- Penyimpanan file bukti transaksi ke storage
-- Insert data ke database dengan status pending
+**1. Sequence Diagram #1: Pembayaran via Midtrans**
+- ✅ Menunjukkan **integrasi dengan pihak ketiga** (Midtrans API)
+- ✅ Membuktikan **kompleksitas teknis** implementasi
+- ✅ Menjelaskan **flow komunikasi** antar komponen
+- ✅ Menjawab pertanyaan: *"Bagaimana sistem berkomunikasi dengan Midtrans?"*
+- ✅ Menunjukkan **end-to-end flow** dari user input hingga email notification
 
-### 5. Proses Verifikasi Admin
-- Interaksi admin untuk approve/reject pembayaran
-- Bulk approve untuk efisiensi
-- Update status verifikasi di database
+**2. Sequence Diagram #2: Webhook Notification**
+- ✅ Menunjukkan **inti dari otomasi** sistem
+- ✅ Membuktikan **tidak ada verifikasi manual**
+- ✅ Menjelaskan **auto-create iuran logic**
+- ✅ Menjawab pertanyaan: *"Bagaimana sistem memverifikasi pembayaran secara otomatis?"*
+- ✅ Menunjukkan **security consideration** (signature validation)
 
-### 6. Proses Lihat Laporan
-- Query data iuran terverifikasi
-- Generate statistik dan rekap bulanan
-- Render data ke view dengan Inertia.js
+### Nilai Akademis
 
-## Komponen Utama
+Kedua sequence diagram ini menunjukkan:
 
-### Actors
-- **Kabupaten**: User dengan role kabupaten
-- **Admin**: User dengan role admin
+1. **Technical Depth** - Detail implementasi hingga level method/function
+2. **System Integration** - Komunikasi dengan external API (Midtrans)
+3. **Automation Logic** - Webhook handling dan auto-verification
+4. **Security Consideration** - Signature validation, fraud detection
+5. **Error Handling** - Logging dan exception handling
+6. **Scalability** - Asynchronous processing, parallel email sending
+7. **Data Integrity** - Idempotency check, transaction management
 
-### Participants
-- **Browser**: Client-side interface
-- **Controllers**: TransactionController, KabupatenController, NotifikasiController, DashboardController
-- **Database**: MySQL/PostgreSQL database
-- **Midtrans API**: External payment gateway service
-- **Mail Service**: Laravel Mail untuk email notification
-- **Storage**: File storage untuk bukti transaksi
-- **Inertia**: Inertia.js untuk rendering pages
+### Menjawab Rumusan Masalah
 
-## Notasi PlantUML
+**Rumusan Masalah 1**: *"Bagaimana mengintegrasikan payment gateway untuk mempercepat proses pembayaran?"*
+- **Dijawab oleh**: Sequence Diagram #1
+- **Bukti**: Flow lengkap dari request Snap Token hingga pembayaran berhasil
 
-- `->` : Synchronous message
-- `-->` : Return message
-- `alt/else/end` : Alternative flow (conditional)
-- `loop/end` : Loop/iteration
-- `note right/left` : Catatan tambahan
-- `participant` : Object/komponen dalam sistem
+**Rumusan Masalah 2**: *"Bagaimana mengotomasi verifikasi pembayaran untuk mengurangi waktu tunggu?"*
+- **Dijawab oleh**: Sequence Diagram #2
+- **Bukti**: Webhook handling yang auto-create iuran dengan status 'diterima' tanpa approval manual
 
-## Catatan
+---
 
-- Semua diagram menggambarkan **interaksi antar komponen** dalam urutan waktu
-- Diagram dibuat berdasarkan **implementasi aktual** di controllers
-- Menunjukkan **alur data** dari request sampai response
-- Mencakup **error handling** dan **alternative flows**
+## Catatan Teknis
+
+### Notasi PlantUML yang Digunakan:
+
+- `->` : **Synchronous message** (request)
+- `-->` : **Return message** (response)
+- `alt/else/end` : **Alternative flow** (conditional)
+- `par/and/end` : **Parallel processing**
+- `loop/end` : **Loop/iteration**
+- `note right/left` : **Catatan tambahan**
+- `participant` : **Object/komponen** dalam sistem
+- `actor` : **User/external entity**
+
+### Best Practices:
+
+1. **Urutan Participants**: Dari kiri ke kanan sesuai flow
+2. **Activation Bar**: Otomatis ditampilkan saat ada message
+3. **Return Message**: Gunakan dashed arrow (`-->`)
+4. **Grouping**: Gunakan `== Section Name ==` untuk grouping
+5. **Notes**: Tambahkan note untuk penjelasan teknis
+
+---
 
 ## Teknologi yang Digunakan
 
-- **Laravel**: Framework backend
-- **Inertia.js**: Frontend framework
-- **Midtrans**: Payment gateway
-- **Laravel Mail**: Email notification
-- **Database**: MySQL/PostgreSQL
-- **Storage**: Laravel File Storage
+- **Laravel 10**: Framework backend (Controller, Model, Service)
+- **Inertia.js**: Frontend framework (Browser interaction)
+- **React/TypeScript**: UI components
+- **Midtrans Snap**: Payment gateway API
+- **MySQL/PostgreSQL**: Relational database
+- **Laravel Mail**: Email notification service (SMTP)
+- **Monolog**: Logging service
+- **Laravel Queue**: Asynchronous job processing (optional)
+
+---
+
+## Referensi
+
+1. **Midtrans Documentation**: https://docs.midtrans.com/
+2. **PlantUML Sequence Diagram**: https://plantuml.com/sequence-diagram
+3. **Laravel Documentation**: https://laravel.com/docs/10.x
+4. **UML Sequence Diagram Best Practices**: https://www.uml-diagrams.org/sequence-diagrams.html
+
+---
+
+## Kesimpulan
+
+Kedua sequence diagram ini **cukup dan sangat kuat** untuk laporan skripsi karena:
+
+1. ✅ **Fokus pada fitur utama** - Integrasi Midtrans dan otomasi verifikasi
+2. ✅ **Detail teknis tinggi** - Menunjukkan implementasi hingga level method
+3. ✅ **Menjawab rumusan masalah** - Langsung address pain points sistem lama
+4. ✅ **Menunjukkan kompleksitas** - Integrasi external API, security, automation
+5. ✅ **Nilai akademis tinggi** - Technical depth yang sesuai untuk skripsi S1
+
+**Catatan**: Jika dosen meminta lebih banyak diagram, Anda bisa menambahkan diagram "receh" seperti Login atau Lihat Laporan. Namun, **2 diagram ini adalah senjata andalan** yang menunjukkan core value dari skripsi Anda.

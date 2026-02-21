@@ -4,12 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-use App\Models\Iuran;
 use Carbon\Carbon;
-use App\Models\Notifikasi;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-    
 
 use Illuminate\Http\Request;
 
@@ -25,13 +21,15 @@ class KabupatenController extends Controller
     return Inertia::render('kabupaten/iuran/index', [
         'transactions' => $transactions,
         'midtransClientKey' => config('midtrans.client_key'),
-        ]);
+        'isActive' => Auth::user()->status,
+    ]);
     }
 
     public function create()
     {
         return Inertia::render('kabupaten/iuran/create', [
             'midtransClientKey' => config('midtrans.client_key'),
+              'isActive' => Auth::user()->status,
         ]);
     }
 
@@ -43,36 +41,66 @@ class KabupatenController extends Controller
     
     // REMOVED: show() method - Replaced by showTransaction() which uses Transaction model directly
     public function laporan()
-{
-    // Ambil semua iuran yang sudah diverifikasi untuk kabupaten yang sedang login
-    $iuran = Iuran::with('kabupaten')
-        // ->where('kabupaten_id', Auth::id())
-        ->where('terverifikasi', 'diterima')
-        ->get();
-
-    // Buat rekap bulanan
-    $laporans = Iuran::select(
-            DB::raw('MONTH(tanggal) as bulan'),
-            DB::raw('SUM(jumlah) as total_iuran')
-        )
-        // ->where('kabupaten_id', Auth::id())
-        ->where('terverifikasi', 'diterima')
-        ->groupBy(DB::raw('MONTH(tanggal)'))
-        ->orderBy(DB::raw('MONTH(tanggal)'))
-        ->get()
-        ->map(function ($item) {
+    {
+        // Ambil SEMUA transaksi yang sudah settlement dari SEMUA kabupaten
+        $transactions = \App\Models\Transaction::with('user')
+            ->where('status', 'settlement')
+            ->get();
+        
+        // Map transactions ke format yang diharapkan oleh frontend
+        $iuran = $transactions->map(function ($transaction) {
             return [
-                'bulan' => Carbon::create()->month($item->bulan)->locale('id')->isoFormat('MMMM'),
-                'total_iuran' => (float) $item->total_iuran,
+                'id' => $transaction->id,
+                'kabupaten_id' => $transaction->user_id,
+                'gross_amount' => $transaction->gross_amount,
+                'jumlah' => $transaction->gross_amount,
+                'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->format('Y-m-d') : $transaction->created_at->format('Y-m-d'),
+                'settlement_time' => $transaction->settlement_time ? $transaction->settlement_time->format('Y-m-d H:i:s') : null,
+                'created_at' => $transaction->created_at->format('Y-m-d H:i:s'),
+                'deskripsi' => $transaction->description ?? 'Pembayaran Iuran PGRI',
+                'status' => $transaction->status,
+                'terverifikasi' => 'diterima',
+                'user' => [
+                    'id' => $transaction->user->id,
+                    'nama_kabupaten' => $transaction->user->nama_kabupaten ?? $transaction->user->name,
+                    'jumlah_anggota' => $transaction->user->jumlah_anggota ?? 0,
+                ],
+                'kabupaten' => [
+                    'id' => $transaction->user->id,
+                    'name' => $transaction->user->nama_kabupaten ?? $transaction->user->name,
+                    'jumlah_anggota' => $transaction->user->jumlah_anggota ?? 0,
+                ],
             ];
         });
 
-    return Inertia::render('kabupaten/laporan/index', [
-        'iuran' => $iuran,
-        'laporans' => $laporans,
-    ]);
-    
-}
+        // Ambil semua kabupaten (users dengan role kabupaten)
+        $kabupatens = \App\Models\User::where('role', 'kabupaten')
+            ->select('id', 'nama_kabupaten', 'jumlah_anggota')
+            ->get();
+
+        // Buat rekap bulanan dari transactions untuk user yang login
+        $laporans = \App\Models\Transaction::select(
+                DB::raw('MONTH(COALESCE(transaction_time, created_at)) as bulan'),
+                DB::raw('SUM(gross_amount) as total_iuran')
+            )
+            ->where('user_id', Auth::id())
+            ->where('status', 'settlement')
+            ->groupBy(DB::raw('MONTH(COALESCE(transaction_time, created_at))'))
+            ->orderBy(DB::raw('MONTH(COALESCE(transaction_time, created_at))'))
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'bulan' => Carbon::create()->month($item->bulan)->locale('id')->isoFormat('MMMM'),
+                    'total_iuran' => (float) $item->total_iuran,
+                ];
+            });
+
+        return Inertia::render('kabupaten/laporan/index', [
+            'iuran' => $iuran,
+            'kabupatens' => $kabupatens,
+            'laporans' => $laporans,
+        ]);
+    }
     // REMOVED: destroy() method - Not needed with Midtrans integration
     // Transactions should be permanent records and not deletable
 

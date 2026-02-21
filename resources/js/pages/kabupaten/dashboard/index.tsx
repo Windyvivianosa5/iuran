@@ -28,13 +28,15 @@ export default function DashboardKabupaten() {
         transaksiTerbaru = [], 
         namaUser,
         recentTransactions = [],
-        midtransClientKey 
+        midtransClientKey,
+        unpaidMonths = []
     } = usePage().props as any;
 
     const [showPaymentModal, setShowPaymentModal] = React.useState(false);
     const [paymentAmount, setPaymentAmount] = React.useState('');
     const [paymentDescription, setPaymentDescription] = React.useState('');
     const [isProcessing, setIsProcessing] = React.useState(false);
+    const [showUnpaidAlert, setShowUnpaidAlert] = React.useState(true);
 
     // Load Midtrans Snap script
     React.useEffect(() => {
@@ -131,12 +133,47 @@ export default function DashboardKabupaten() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard Kabupaten" />
 
-            <div className="flex min-h-screen flex-col gap-6 bg-gray-50 p-6">
+            <div className="flex min-h-screen flex-col gap-6 bg-gray-50 p-6 dark:bg-black">
                 {/* Header Sambutan */}
-                <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm">
-                    <h1 className="text-2xl font-bold text-gray-800">Selamat Datang, {namaUser}</h1>
-                    <p className="text-gray-600 mt-1">Pantau aktivitas iuran dan laporan secara cepat dan efisien</p>
+                <div className="rounded-lg bg-white border border-gray-200 p-6 shadow-sm dark:bg-black dark:border-white">
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Selamat Datang, {namaUser}</h1>
+                    <p className="text-gray-600 mt-1 dark:text-white">Pantau aktivitas iuran dan laporan secara cepat dan efisien</p>
                 </div>
+
+                {/* Notifikasi Peringatan - Bulan yang Belum Dibayar */}
+                {unpaidMonths.length > 0 && showUnpaidAlert && (
+                    <div className="rounded-lg bg-orange-50 border border-orange-200 p-5 shadow-sm">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                                <h3 className="text-base font-semibold text-orange-900 mb-2">
+                                    Peringatan: Iuran Belum Dibayar
+                                </h3>
+                                <p className="text-sm text-orange-800 mb-3">
+                                    Anda memiliki <span className="font-semibold">{unpaidMonths.length} bulan</span> yang belum melakukan pembayaran iuran di tahun ini:
+                                </p>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {unpaidMonths.map((month: any, index: number) => (
+                                        <span 
+                                            key={index}
+                                            className="px-3 py-1 rounded-md text-sm font-medium bg-white text-orange-800 border border-orange-200"
+                                        >
+                                            {month.name}
+                                        </span>
+                                    ))}
+                                </div>
+                                <p className="text-sm text-orange-700">
+                                    Segera lakukan pembayaran untuk menghindari tunggakan.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowUnpaidAlert(false)}
+                                className="text-orange-400 hover:text-orange-600 transition-colors text-sm"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Statistik Cards */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -163,10 +200,10 @@ export default function DashboardKabupaten() {
                 </div>
 
                 {/* Grafik Pemasukan */}
-                <Card className="bg-white shadow-md">
-                    <CardContent className="p-5">
+                <Card className="bg-white shadow-md dark:bg-black dark:border-white">
+                    <CardContent className="p-5 dark:bg-black dark:border-white">
                         <div className="mb-4 flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-800">Grafik Pemasukan Bulanan</h3>
+                            <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Grafik Pemasukan Bulanan</h3>
                             {/* <p className="text-sm font-medium text-green-600">Pertumbuhan: +{growth}%</p> */}
                         </div>
                         <div className="!h-[400px] w-full">
@@ -219,11 +256,11 @@ export default function DashboardKabupaten() {
                 </Card>
 
                 {/* Transaksi Terbaru */}
-                <Card className="bg-white shadow-md">
-                    <CardContent className="p-5">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-4">Transaksi Terbaru</h3>
+                <Card className="bg-white shadow-md dark:bg-black dark:border-white">
+                    <CardContent className="p-5 dark:bg-black dark:border-white">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4 dark:text-white">Transaksi Terbaru</h3>
                         <table className="w-full border-separate border-spacing-y-2 text-sm">
-                            <thead className="bg-gray-100 text-gray-600">
+                            <thead className="bg-gray-100 text-gray-600 dark:bg-black dark:border-white">
                                 <tr>
                                     <th className="px-3 py-2 text-left">Bulan</th>
                                     <th className="px-3 py-2 text-left">Kabupaten</th>
@@ -233,9 +270,9 @@ export default function DashboardKabupaten() {
                             <tbody>
                                 {transaksiTerbaru.length > 0 ? (
                                     transaksiTerbaru.map((item: any, index: number) => (
-                                        <tr key={index} className="rounded-md bg-white shadow-sm transition hover:bg-gray-50">
-                                            <td className="px-3 py-2">{item.bulan}</td>
-                                            <td className="px-3 py-2">{item.kabupaten}</td>
+                                        <tr key={index} className="rounded-md bg-white shadow-sm transition hover:bg-gray-50 dark:bg-black dark:border-white">
+                                            <td className="px-3 py-2 dark:text-white">{item.bulan}</td>
+                                            <td className="px-3 py-2 dark:text-white">{item.kabupaten}</td>
                                             <td className="px-3 py-2 font-medium text-green-700">Rp {Number(item.total_iuran).toLocaleString()}</td>
                                         </tr>
                                     ))
@@ -256,11 +293,11 @@ export default function DashboardKabupaten() {
 
                 {/* Recent Transactions */}
                 {recentTransactions.length > 0 && (
-                    <Card className="bg-white shadow-md">
-                        <CardContent className="p-5">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">Riwayat Pembayaran</h3>
+                    <Card className="bg-white shadow-md dark:bg-black dark:border-white">
+                        <CardContent className="p-5 dark:bg-black dark:border-white">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4 dark:text-white">Riwayat Pembayaran</h3>
                             <table className="w-full border-separate border-spacing-y-2 text-sm">
-                                <thead className="bg-gray-100 text-gray-600">
+                                <thead className="bg-gray-100 text-gray-600 dark:bg-black dark:border-white">
                                     <tr>
                                         <th className="px-3 py-2 text-left">ID Pesanan</th>
                                         <th className="px-3 py-2 text-left">Deskripsi</th>
@@ -271,7 +308,7 @@ export default function DashboardKabupaten() {
                                 </thead>
                                 <tbody>
                                     {recentTransactions.map((transaction: any) => (
-                                        <tr key={transaction.id} className="rounded-md bg-white shadow-sm transition hover:bg-gray-50">
+                                        <tr key={transaction.id} className="rounded-md bg-white shadow-sm transition hover:bg-gray-50 dark:bg-black dark:border-white">
                                             <td className="px-3 py-2 font-mono text-xs">{transaction.order_id}</td>
                                             <td className="px-3 py-2">{transaction.description}</td>
                                             <td className="px-3 py-2 font-medium text-blue-700">

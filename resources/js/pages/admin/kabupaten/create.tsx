@@ -85,7 +85,7 @@ export default function CreateKabupaten() {
                                         id="nama_kabupaten"
                                         type="text"
                                         value={data.nama_kabupaten}
-                                        onChange={(e) => setData('nama_kabupaten', e.target.value)}
+                                        onChange={(e) => setData('nama_kabupaten', e.currentTarget.value)}
                                         placeholder="Contoh: Kabupaten Bandung"
                                         className={getError('nama_kabupaten') ? 'border-red-500' : ''}
                                     />
@@ -103,7 +103,7 @@ export default function CreateKabupaten() {
                                         id="kode_kabupaten"
                                         type="text"
                                         value={data.kode_kabupaten}
-                                        onChange={(e) => setData('kode_kabupaten', e.target.value.toUpperCase())}
+                                        onChange={(e) => setData('kode_kabupaten', e.currentTarget.value.toUpperCase())}
                                         placeholder="Contoh: BDG"
                                         maxLength={10}
                                         className={getError('kode_kabupaten') ? 'border-red-500' : ''}
@@ -123,7 +123,7 @@ export default function CreateKabupaten() {
                                         id="jumlah_anggota"
                                         type="number"
                                         value={data.jumlah_anggota}
-                                        onChange={(e) => setData('jumlah_anggota', e.target.value)}
+                                        onChange={(e) => setData('jumlah_anggota', e.currentTarget.value)}
                                         placeholder="Contoh: 500"
                                         min="0"
                                         className={getError('jumlah_anggota') ? 'border-red-500' : ''}
@@ -203,7 +203,7 @@ export default function CreateKabupaten() {
                                                 id="user_email"
                                                 type="email"
                                                 value={data.user_email}
-                                                onChange={(e) => setData('user_email', e.target.value)}
+                                                onChange={(e) => setData('user_email', e.currentTarget.value)}
                                                 placeholder="Contoh: budi@pgri-bdg.id"
                                                 className={getError('user_email') ? 'border-red-500' : ''}
                                             />
@@ -222,7 +222,7 @@ export default function CreateKabupaten() {
                                                 id="user_password"
                                                 type="password"
                                                 value={data.user_password}
-                                                onChange={(e) => setData('user_password', e.target.value)}
+                                                onChange={(e) => setData('user_password', e.currentTarget.value)}
                                                 placeholder="Minimal 8 karakter"
                                                 className={getError('user_password') ? 'border-red-500' : ''}
                                             />
@@ -240,7 +240,7 @@ export default function CreateKabupaten() {
                                                 id="user_password_confirmation"
                                                 type="password"
                                                 value={data.user_password_confirmation}
-                                                onChange={(e) => setData('user_password_confirmation', e.target.value)}
+                                                onChange={(e) => setData('user_password_confirmation', e.currentTarget.value)}
                                                 placeholder="Ketik ulang password"
                                                 className={getError('user_password_confirmation') ? 'border-red-500' : ''}
                                             />

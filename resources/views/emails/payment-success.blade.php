@@ -3,206 +3,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pembayaran Berhasil & SUKSES</title>
+    <title>Pembayaran Berhasil</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             line-height: 1.6;
-            color: #333;
-            background-color: #f4f4f4;
+            color: #202124;
+            background-color: #f5f5f5;
             margin: 0;
             padding: 0;
         }
-        .container {
+        .email-wrapper {
             max-width: 600px;
-            margin: 20px auto;
-            background: #ffffff;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            background-color: #ffffff;
         }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
+        .email-header {
+            padding: 24px 40px;
+            border-bottom: 1px solid #e8eaed;
         }
-        .header h1 {
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-text {
+            font-size: 20px;
+            font-weight: 500;
+            color: #1a73e8;
             margin: 0;
-            font-size: 24px;
+        }
+        .email-body {
+            padding: 32px 40px;
+        }
+        .greeting {
+            font-size: 16px;
+            color: #202124;
+            margin: 0 0 24px 0;
+        }
+        .success-indicator {
+            background-color: #e6f4ea;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+            text-align: center;
         }
         .success-icon {
-            font-size: 60px;
-            margin: 10px 0;
+            font-size: 48px;
+            margin-bottom: 12px;
         }
-        .content {
-            padding: 30px;
+        .success-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #137333;
+            margin: 0 0 8px 0;
         }
-        .info-box {
-            background: #f8f9fa;
-            border-left: 4px solid #28a745;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
+        .success-subtitle {
+            font-size: 14px;
+            color: #5f6368;
+            margin: 0;
         }
-        .info-row {
+        .amount-display {
+            font-size: 36px;
+            font-weight: 400;
+            color: #202124;
+            text-align: center;
+            margin: 24px 0;
+            letter-spacing: -0.5px;
+        }
+        .details-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 24px 0;
+        }
+        .details-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #5f6368;
+            margin: 0 0 16px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .detail-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #e9ecef;
+            padding: 12px 0;
+            border-bottom: 1px solid #e8eaed;
         }
-        .info-row:last-child {
+        .detail-row:last-child {
             border-bottom: none;
         }
-        .info-label {
-            font-weight: 600;
-            color: #666;
+        .detail-label {
+            font-size: 14px;
+            color: #5f6368;
+            margin: 0 5px 0 0;
         }
-        .info-value {
-            color: #333;
+        .detail-value {
+            font-size: 14px;
+            color: #202124;
             text-align: right;
+            font-weight: 400;
         }
-        .amount {
-            font-size: 32px;
-            font-weight: bold;
-            color: #28a745;
-            text-align: center;
-            margin: 20px 0;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .button:hover {
-            opacity: 0.9;
-        }
-        .footer {
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
+        .detail-value code {
+            background-color: #e8eaed;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
         }
         .status-badge {
             display: inline-block;
-            padding: 5px 15px;
-            background: #28a745;
-            color: white;
-            border-radius: 20px;
+            padding: 4px 12px;
+            background-color: #e6f4ea;
+            color: #137333;
+            border-radius: 12px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 500;
         }
-        .lunas-badge {
-            display: inline-block;
-            padding: 8px 20px;
-            background: #28a745;
-            color: white;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: bold;
-            margin: 10px 0;
-            box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
+        .info-box {
+            background-color: #e8f0fe;
+            border-left: 4px solid #1a73e8;
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 4px;
         }
-        .settlement-box {
-            background: #d4edda;
-            border: 2px solid #28a745;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 8px;
+        .info-box-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1967d2;
+            margin: 0 0 8px 0;
+        }
+        .info-box ul {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            font-size: 14px;
+            color: #174ea6;
+            margin: 4px 0;
+        }
+        .note-box {
+            background-color: #fef7e0;
+            border-left: 4px solid #f9ab00;
+            padding: 16px;
+            margin: 24px 0;
+            border-radius: 4px;
+        }
+        .note-box-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #b06000;
+            margin: 0 0 8px 0;
+        }
+        .note-box ul {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+        }
+        .note-box li {
+            font-size: 14px;
+            color: #7c4a00;
+            margin: 4px 0;
+        }
+        .closing {
+            font-size: 14px;
+            color: #5f6368;
+            margin: 32px 0 0 0;
+            line-height: 1.6;
+        }
+        .signature {
+            font-size: 14px;
+            color: #202124;
+            margin: 16px 0 0 0;
+        }
+        .signature-name {
+            font-weight: 500;
+        }
+        .email-footer {
+            padding: 24px 40px;
+            border-top: 1px solid #e8eaed;
+            background-color: #f8f9fa;
+        }
+        .footer-text {
+            font-size: 12px;
+            color: #5f6368;
             text-align: center;
+            margin: 4px 0;
+            line-height: 1.5;
+        }
+        .footer-text a {
+            color: #1a73e8;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            
-            <h1>Pembayaran Berhasil !</h1>
-            <p>Terima kasih atas pembayaran iuran Anda</p>
+    <div class="email-wrapper">
+        <div class="email-header">
+            <div class="logo-area">
+                <h1 class="logo-text">PGRI Provinsi Riau</h1>
+            </div>
         </div>
 
-        <div class="content">
-            <p>Yth. <strong>{{ $user->name }}</strong>,</p>
-            
-            <p>Pembayaran iuran PGRI Anda telah <strong>berhasil diproses dan dinyatakan SUKSES</strong> melalui Midtrans.</p>
+        <div class="email-body">
+            <p class="greeting">Halo <strong>{{ $user->name }}</strong>,</p>
 
-            <div class="settlement-box">
-                <div class="lunas-badge">SUKSES</div>
-                <p style="margin: 10px 0 0 0; color: #155724; font-weight: 600;">
-                    Status Settlement: {{ \Carbon\Carbon::parse($settlementTime)->format('d F Y, H:i') }} WIB
-                </p>
+            <div class="success-indicator">
+                <div class="success-icon">✅</div>
+                <h2 class="success-title">Pembayaran Berhasil</h2>
+                <p class="success-subtitle">Transaksi Anda telah berhasil diproses</p>
             </div>
 
-            <div class="amount">
+            <div class="amount-display">
                 Rp {{ number_format($transaction->gross_amount, 0, ',', '.') }}
             </div>
 
+            <p style="font-size: 14px; color: #5f6368; margin: 24px 0;">
+                Pembayaran iuran PGRI Anda telah berhasil diverifikasi dan tercatat dalam sistem kami pada {{ \Carbon\Carbon::parse($settlementTime)->format('d F Y') }} pukul {{ \Carbon\Carbon::parse($settlementTime)->format('H:i') }} WIB.
+            </p>
+
+            <div class="details-section">
+                <h3 class="details-title">Detail Transaksi</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Order ID:</span>
+                    <span class="detail-value"><code>{{ $transaction->order_id }}</code></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Transaction ID:</span>
+                    <span class="detail-value"><code>{{ $transaction->transaction_id ?? '-' }}</code></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tanggal Transaksi:</span>
+                    <span class="detail-value">{{ \Carbon\Carbon::parse($transaction->created_at)->format('d M Y, H:i') }} WIB</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tanggal Settlement:</span>
+                    <span class="detail-value">{{ \Carbon\Carbon::parse($settlementTime)->format('d M Y, H:i') }} WIB</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Metode Pembayaran:</span>
+                    <span class="detail-value">{{ ucwords(str_replace('_', ' ', $transaction->payment_type ?? 'Midtrans')) }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Deskripsi:</span>
+                    <span class="detail-value">{{ $transaction->description }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value"><span class="status-badge">Berhasil</span></span>
+                </div>
+            </div>
+
             <div class="info-box">
-                <div class="info-row">
-                    <span class="info-label">Order ID</span>
-                    <span class="info-value"><code>{{ $transaction->order_id }}</code></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Transaction ID</span>
-                    <span class="info-value"><code>{{ $transaction->transaction_id ?? '-' }}</code></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Tanggal Transaksi</span>
-                    <span class="info-value">{{ \Carbon\Carbon::parse($transaction->created_at)->format('d F Y, H:i') }} WIB</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Tanggal Settlement</span>
-                    <span class="info-value"><strong style="color: #28a745;">{{ \Carbon\Carbon::parse($settlementTime)->format('d F Y, H:i') }} WIB</strong></span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Metode Pembayaran</span>
-                    <span class="info-value">{{ ucwords(str_replace('_', ' ', $transaction->payment_type ?? 'Midtrans')) }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Deskripsi</span>
-                    <span class="info-value">{{ $transaction->description }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Status Pembayaran</span>
-                    <span class="info-value"><span class="status-badge">SUKSES</span></span>
-                </div>
-            </div>
-
-            <div style="background: #d1ecf1; border-left: 4px solid #0c5460; padding: 15px; margin: 20px 0; border-radius: 4px; color: #0c5460;">
-                <strong>Konfirmasi Pembayaran:</strong>
-                <ul style="margin: 10px 0; padding-left: 20px;">
-                    <li>Pembayaran Anda telah <strong>SUKSES</strong> dan terverifikasi otomatis</li>
-                    <li>Status settlement tercatat pada sistem</li>
-                    <li>Bukti pembayaran ini dapat digunakan sebagai arsip resmi</li>
-                    <li>Tidak perlu melakukan konfirmasi manual ke admin</li>
+                <h4 class="info-box-title">Yang Perlu Anda Ketahui</h4>
+                <ul>
+                    <li>Pembayaran telah terverifikasi secara otomatis oleh sistem</li>
+                    <li>Status pembayaran sudah tercatat dalam database PGRI Riau</li>
+                    <li>Email ini dapat digunakan sebagai bukti pembayaran resmi</li>
+                    <li>Tidak diperlukan konfirmasi manual ke administrator</li>
                 </ul>
             </div>
 
-            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                <strong>Catatan Penting:</strong>
-                <ul style="margin: 10px 0; padding-left: 20px;">
-                    <li>Simpan email ini sebagai bukti pembayaran yang sah</li>
-                    <li>Pembayaran sudah tercatat di sistem PGRI Riau</li>
-                    <li>Jika ada pertanyaan, hubungi admin PGRI dengan menyertakan Order ID</li>
+            <div class="note-box">
+                <h4 class="note-box-title">Catatan Penting</h4>
+                <ul>
+                    <li>Simpan email ini untuk arsip dan referensi Anda</li>
+                    <li>Jika ada pertanyaan, silakan hubungi administrator dengan menyertakan Order ID</li>
+                    <li>Pastikan data pembayaran Anda sesuai dengan yang tertera di atas</li>
                 </ul>
             </div>
 
-            <p>Terima kasih atas kontribusi dan kepercayaan Anda kepada PGRI Riau.</p>
+            <p class="closing">
+                Terima kasih atas kontribusi dan kepercayaan Anda kepada PGRI Provinsi Riau. Dukungan Anda sangat berarti bagi kemajuan organisasi kami.
+            </p>
 
-            <p>Salam,<br>
-            <strong>Tim PGRI Riau</strong></p>
+            <div class="signature">
+                <p style="margin: 0;">Salam hormat,</p>
+                <p class="signature-name" style="margin: 4px 0 0 0;">Tim PGRI Provinsi Riau</p>
+            </div>
         </div>
 
-        <div class="footer">
-            <p><strong>PGRI Provinsi Riau</strong></p>
-            <p>Email ini dikirim otomatis oleh sistem. Mohon tidak membalas email ini.</p>
-            <p>&copy; {{ date('Y') }} PGRI Riau. All rights reserved.</p>
+        <div class="email-footer">
+            <p class="footer-text"><strong>PGRI Provinsi Riau</strong></p>
+            <p class="footer-text">Email ini dikirim secara otomatis. Mohon tidak membalas email ini.</p>
+            <p class="footer-text">&copy; {{ date('Y') }} PGRI Provinsi Riau. Semua hak dilindungi.</p>
         </div>
     </div>
 </body>

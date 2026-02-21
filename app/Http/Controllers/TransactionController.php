@@ -36,6 +36,15 @@ class TransactionController extends Controller
 
         try {
             $user = Auth::user();
+            
+            // Check if user account is active
+            if ($user->status === 'nonaktif') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun Anda tidak aktif. Silakan hubungi administrator untuk mengaktifkan akun.',
+                ], 403);
+            }
+            
             $orderId = 'TRX-' . $user->id . '-' . time();
 
             // Create transaction record
@@ -64,6 +73,11 @@ class TransactionController extends Controller
                         'quantity' => 1,
                         'name' => $request->description ?? 'Iuran PGRI',
                     ],
+                ],
+                'callbacks' => [
+                    'finish' => url('/kabupaten/dashboard/iuran'),
+                    'unfinish' => url('/kabupaten/dashboard/iuran'),
+                    'error' => url('/kabupaten/dashboard/iuran'),
                 ],
             ];
 
@@ -152,11 +166,6 @@ class TransactionController extends Controller
                 
                 Log::info("Transaction status updated to settlement");
                 Log::info("Settlement time: " . now());
-                
-                // Create iuran record for admin dashboard
-                Log::info("Creating iuran record...");
-                $this->createIuranFromTransaction($transaction);
-                Log::info("Iuran record created");
                 
                 // Send email notifications
                 try {
@@ -264,34 +273,5 @@ class TransactionController extends Controller
             'success' => true,
             'transactions' => $transactions,
         ]);
-    }
-
-    /**
-     * Create iuran record from successful transaction
-     */
-    private function createIuranFromTransaction(Transaction $transaction)
-    {
-        try {
-            // Check if iuran already exists for this transaction
-            $existingIuran = \App\Models\Iuran::where('kabupaten_id', $transaction->user_id)
-                ->where('jumlah', $transaction->gross_amount)
-                ->where('tanggal', $transaction->created_at->format('Y-m-d'))
-                ->first();
-
-            if (!$existingIuran) {
-                \App\Models\Iuran::create([
-                    'kabupaten_id' => $transaction->user_id,
-                    'jumlah' => $transaction->gross_amount,
-                    'tanggal' => $transaction->created_at,
-                    'deskripsi' => $transaction->description,
-                    'terverifikasi' => 'diterima', // Auto-approve Midtrans payments
-                    'bukti_transaksi' => 'midtrans_' . $transaction->order_id, // Store order_id as proof
-                ]);
-
-                Log::info("Iuran created from transaction: {$transaction->order_id}");
-            }
-        } catch (\Exception $e) {
-            Log::error("Failed to create iuran from transaction: " . $e->getMessage());
-        }
     }
 }

@@ -1,0 +1,200 @@
+// Database Diagram - Sistem Iuran PGRI
+// Untuk digunakan di: https://dbdiagram.io/
+// Copy paste code ini ke dbdiagram.io editor
+
+Project SistemIuranPGRI {
+  database_type: 'MySQL'
+  Note: '''
+    # Sistem Iuran PGRI - Database Schema
+    
+    Database untuk sistem pembayaran iuran PGRI dengan integrasi Midtrans Payment Gateway.
+    
+    **Fitur Utama:**
+    - Pembayaran via Midtrans (Multiple payment methods)
+    - Auto-verification via Webhook
+    - Email notification otomatis
+    - Role-based access (Admin, Kabupaten, User)
+  '''
+}
+
+// ===== TABLES =====
+
+Table users {
+  id bigint [pk, increment, note: 'Primary Key']
+  name varchar(255) [not null, note: 'Nama lengkap user']
+  email varchar(255) [unique, not null, note: 'Email untuk login dan notifikasi']
+  email_verified_at timestamp [null, note: 'Waktu verifikasi email']
+  password varchar(255) [not null, note: 'Password terenkripsi (bcrypt)']
+  role enum('admin', 'kabupaten', 'user') [not null, default: 'user', note: 'Role user untuk authorization']
+  kabupaten_id bigint [null, note: 'ID kabupaten (untuk role kabupaten)']
+  anggota integer [null, note: 'Jumlah anggota (untuk kabupaten)']
+  remember_token varchar(100) [null]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Indexes {
+    email [unique, name: 'users_email_unique']
+    role [name: 'users_role_index']
+  }
+  
+  Note: 'Tabel user untuk autentikasi dan authorization. Mendukung 3 role: admin (verifikasi), kabupaten (bayar iuran), user (umum)'
+}
+
+Table transaksi_midtrans {
+  id bigint [pk, increment, note: 'Primary Key']
+  user_id bigint [not null, ref: > users.id, note: 'User yang melakukan pembayaran']
+  order_id varchar(255) [unique, not null, note: 'Order ID unik dari sistem (ORDER-{timestamp}-{user_id})']
+  transaction_id varchar(255) [null, note: 'Transaction ID dari Midtrans (setelah pembayaran)']
+  gross_amount integer [not null, note: 'Jumlah pembayaran dalam Rupiah']
+  payment_type varchar(50) [null, note: 'Jenis pembayaran: bank_transfer, gopay, credit_card, qris, dll']
+  payment_method varchar(50) [null, note: 'Detail metode: bca_va, bni_va, mandiri_bill, dll']
+  status enum('pending', 'settlement', 'capture', 'deny', 'cancel', 'expire', 'failure') [not null, default: 'pending', note: 'Status transaksi dari Midtrans']
+  snap_token text [null, note: 'Snap token dari Midtrans untuk payment page']
+  description text [null, note: 'Deskripsi pembayaran dari user']
+  transaction_time timestamp [null, note: 'Waktu transaksi diproses Midtrans']
+  settlement_time timestamp [null, note: 'Waktu pembayaran selesai (settlement)']
+  metadata json [null, note: 'Data tambahan dari Midtrans (fraud_status, dll)']
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Indexes {
+    order_id [unique, name: 'transaksi_order_id_unique']
+    user_id [name: 'transaksi_user_id_index']
+    status [name: 'transaksi_status_index']
+    (user_id, status) [name: 'transaksi_user_status_index']
+  }
+  
+  Note: '''
+    Tabel transaksi pembayaran via Midtrans.
+    
+    **Status Flow:**
+    1. pending → Transaksi dibuat, belum bayar
+    2. settlement → Pembayaran berhasil (trigger auto-create iuran)
+    3. cancel/deny/expire/failure → Pembayaran gagal
+    
+    **Auto-verification:**
+    Saat status = settlement, sistem otomatis:
+    - Create record di tabel iurans
+    - Set terverifikasi = 'diterima'
+    - Kirim email ke Kabupaten & Admin
+  '''
+}
+
+Table iurans {
+  id bigint [pk, increment, note: 'Primary Key']
+  kabupaten_id bigint [not null, ref: > users.id, note: 'Kabupaten yang membayar iuran']
+  jumlah integer [not null, note: 'Jumlah iuran dalam Rupiah']
+  tanggal datetime [not null, note: 'Tanggal pembayaran iuran']
+  deskripsi text [null, note: 'Deskripsi/keterangan iuran']
+  bukti_transaksi varchar(255) [null, note: 'Order ID dari transaksi_midtrans (sebagai bukti)']
+  terverifikasi enum('pending', 'diterima', 'ditolak') [not null, default: 'pending', note: 'Status verifikasi oleh admin']
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Indexes {
+    kabupaten_id [name: 'iurans_kabupaten_id_index']
+    terverifikasi [name: 'iurans_terverifikasi_index']
+    tanggal [name: 'iurans_tanggal_index']
+    bukti_transaksi [name: 'iurans_bukti_transaksi_index']
+  }
+  
+  Note: '''
+    Tabel data iuran yang sudah dibayar.
+    
+    **Auto-created dari Midtrans:**
+    - Saat transaksi_midtrans.status = settlement
+    - Sistem otomatis create record iuran
+    - terverifikasi langsung 'diterima' (tanpa approval manual)
+    - bukti_transaksi = order_id dari transaksi_midtrans
+    
+    **Manual entry:**
+    - Kabupaten juga bisa input manual (legacy)
+    - Status terverifikasi = 'pending'
+    - Perlu approval dari admin
+  '''
+}
+
+Table password_reset_tokens {
+  email varchar(255) [pk, note: 'Email user yang request reset']
+  token varchar(255) [not null, note: 'Token reset password']
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Tabel untuk fitur reset password'
+}
+
+Table failed_jobs {
+  id bigint [pk, increment]
+  uuid varchar(255) [unique, not null]
+  connection text [not null]
+  queue text [not null]
+  payload longtext [not null]
+  exception longtext [not null]
+  failed_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Tabel untuk tracking failed jobs (Laravel Queue)'
+}
+
+Table personal_access_tokens {
+  id bigint [pk, increment]
+  tokenable_type varchar(255) [not null]
+  tokenable_id bigint [not null]
+  name varchar(255) [not null]
+  token varchar(64) [unique, not null]
+  abilities text [null]
+  last_used_at timestamp [null]
+  expires_at timestamp [null]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+  
+  Indexes {
+    (tokenable_type, tokenable_id) [name: 'personal_access_tokens_tokenable_index']
+  }
+  
+  Note: 'Tabel untuk Laravel Sanctum API tokens'
+}
+
+// ===== RELATIONSHIPS =====
+
+// User has many Transactions
+Ref: users.id < transaksi_midtrans.user_id [delete: cascade, update: cascade]
+
+// User (Kabupaten) has many Iurans
+Ref: users.id < iurans.kabupaten_id [delete: cascade, update: cascade]
+
+// ===== TABLE GROUPS =====
+
+TableGroup "Core Tables" {
+  users
+  transaksi_midtrans
+  iurans
+}
+
+TableGroup "Laravel System Tables" {
+  password_reset_tokens
+  failed_jobs
+  personal_access_tokens
+}
+
+// ===== ENUMS =====
+
+enum user_role {
+  admin [note: 'Admin - Verifikasi pembayaran, lihat laporan']
+  kabupaten [note: 'Kabupaten - Bayar iuran, lihat riwayat']
+  user [note: 'User - Role default']
+}
+
+enum transaction_status {
+  pending [note: 'Transaksi dibuat, belum bayar']
+  settlement [note: 'Pembayaran berhasil (TRIGGER AUTO-CREATE IURAN)']
+  capture [note: 'Pembayaran tertangkap (credit card)']
+  deny [note: 'Pembayaran ditolak (fraud/insufficient)']
+  cancel [note: 'Pembayaran dibatalkan user']
+  expire [note: 'Pembayaran kadaluarsa (timeout)']
+  failure [note: 'Pembayaran gagal (technical error)']
+}
+
+enum iuran_verification_status {
+  pending [note: 'Menunggu verifikasi admin (untuk manual entry)']
+  diterima [note: 'Diterima/Approved (AUTO untuk Midtrans payment)']
+  ditolak [note: 'Ditolak/Rejected oleh admin']
+}

@@ -26,7 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function DashboardKabupatenIuran({ transactions }: { transactions: any }) {
-  const { midtransClientKey } = usePage().props as any;
+  const { midtransClientKey, isActive } = usePage().props as any;
   const [isProcessing, setIsProcessing] = React.useState(false);
 
   // Load Midtrans Snap script
@@ -124,19 +124,31 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
       <div className="flex flex-col gap-6 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Daftar Transaksi Pembayaran</h1>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Daftar Transaksi Pembayaran</h1>
           </div>
-          <Link href="iuran/create">
-            <Button variant="default" className="bg-gradient-to-r from-blue-600 to-blue-700 shadow hover:from-blue-700 hover:to-blue-800">
-              Bayar Iuran
+         {
+          isActive === "aktif" ? (
+            <Link href="iuran/create">
+              <Button variant="default" className="bg-gradient-to-r from-blue-600 to-blue-700 shadow hover:from-blue-700 hover:to-blue-800">
+                Bayar Iuran
+              </Button>
+            </Link>
+          ) : (
+            <Button 
+              variant="default" 
+              className="bg-gray-400 cursor-not-allowed opacity-60 dark:bg-gray-600 dark:text-gray-300"
+              onClick={() => toast.error('Akun tidak aktif, Hubungi Admin')}
+            >
+              Akun Tidak Aktif
             </Button>
-          </Link>
+          )
+         }
         </div>
 
         {/* Info Box */}
         <div className="rounded-lg bg-blue-50 p-4">
-          <h3 className="mb-2 font-semibold text-blue-900">Informasi</h3>
-          <p className="text-sm text-blue-800">
+          <h3 className="mb-2 font-semibold text-blue-900 dark:text-blue-900">Informasi</h3>
+          <p className="text-sm text-blue-800 dark:text-blue-800">
             Semua pembayaran dilakukan melalui Midtrans Payment Gateway. Klik "Bayar Iuran" untuk melakukan pembayaran baru.
             Untuk transaksi pending, klik "Lanjutkan Bayar" untuk menyelesaikan pembayaran.
           </p>
@@ -161,7 +173,7 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
                   transactions.map((transaction: any) => (
                     <TableRow
                       key={transaction.id}
-                      className="border-b transition hover:bg-gray-50"
+                      className="border-b transition hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                       <TableCell className="font-mono text-xs">{transaction.order_id}</TableCell>
                       <TableCell className="font-medium">{transaction.description}</TableCell>

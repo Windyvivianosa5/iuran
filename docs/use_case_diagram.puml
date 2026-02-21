@@ -1,0 +1,84 @@
+@startuml
+title Use Case Diagram Sistem Iuran PGRI
+
+left to right direction
+skinparam packageStyle rectangle
+
+' Actors
+actor "Kabupaten" as kabupaten
+actor "Admin" as admin
+
+' System Boundary
+rectangle "Sistem Iuran PGRI" {
+  
+  ' Shared Use Cases
+  usecase "Login" as login
+  usecase "Logout" as logout
+  
+  ' Kabupaten Use Cases
+  usecase "Lihat Dashboard\nKabupaten" as dashboard_kab
+  usecase "Bayar Iuran" as bayar
+  usecase "Lihat Riwayat\nTransaksi" as riwayat_kab
+  usecase "Lihat Laporan\nIuran" as laporan_kab
+  
+  ' Admin Use Cases
+  usecase "Lihat Dashboard\nAdmin" as dashboard_admin
+  usecase "Lihat Riwayat\nTransaksi (All)" as riwayat_admin
+  usecase "Kelola Notifikasi" as notifikasi
+  usecase "Buat Laporan" as laporan_admin
+  usecase "Kelola Data\nKabupaten" as kelola_kab
+  
+  ' Extension Use Cases
+  usecase "Lihat Detail\nTransaksi" as detail
+  usecase "Lanjutkan\nPembayaran" as lanjut
+  
+  ' Include relationships (dari use case ke Login)
+  dashboard_kab ..> login : <<include>>
+  dashboard_admin ..> login : <<include>>
+  
+  ' Extend relationships (dari extension use case ke base use case)
+  detail ..> riwayat_kab : <<extend>>
+  lanjut ..> riwayat_kab : <<extend>>
+  detail ..> riwayat_admin : <<extend>>
+  riwayat_kab ..> bayar : <<extend>>
+}
+
+' Actor to Use Case relationships - Kabupaten
+kabupaten --> login
+kabupaten --> dashboard_kab
+kabupaten --> bayar
+kabupaten --> riwayat_kab
+kabupaten --> laporan_kab
+kabupaten --> logout
+
+' Actor to Use Case relationships - Admin
+admin --> login
+admin --> dashboard_admin
+admin --> riwayat_admin
+admin --> notifikasi
+admin --> laporan_admin
+admin --> kelola_kab
+admin --> logout
+
+' Notes
+note right of bayar
+  Kabupaten melakukan pembayaran
+  melalui payment gateway.
+  Sistem memproses pembayaran
+  secara otomatis di backend.
+end note
+
+note right of riwayat_admin
+  Admin memonitor semua transaksi
+  dari seluruh kabupaten.
+  Tidak ada verifikasi manual.
+end note
+
+note bottom of login
+  **Use Case Shared:**
+  Login digunakan oleh kedua aktor.
+  Sistem akan redirect ke dashboard
+  sesuai dengan role pengguna.
+end note
+
+@enduml

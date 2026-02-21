@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Iuran;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -11,7 +11,37 @@ class NotifikasiController extends Controller
 {
     public function index()
     {
-        $notifikasis = Iuran::orderBy('created_at', 'desc')->get();
+        $notifikasis = Transaction::with('user')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'order_id' => $transaction->order_id,
+                    'transaction_id' => $transaction->transaction_id,
+                    'gross_amount' => $transaction->gross_amount,
+                    'payment_type' => $transaction->payment_type,
+                    'payment_method' => $transaction->payment_method,
+                    'status' => $transaction->status,
+                    'description' => $transaction->description,
+                    'transaction_time' => $transaction->transaction_time,
+                    'settlement_time' => $transaction->settlement_time,
+                    'created_at' => $transaction->created_at,
+                    'updated_at' => $transaction->updated_at,
+                    'user' => $transaction->user,
+                    'kabupaten' => $transaction->user ? [
+                        'name' => $transaction->user->nama_kabupaten,
+                        'kode' => $transaction->user->kode_kabupaten,
+                        'tipe' => 'Kabupaten', // Default tipe
+                    ] : null,
+                    'jumlah' => $transaction->gross_amount,
+                    'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->format('Y-m-d') : $transaction->created_at->format('Y-m-d'),
+                    'deskripsi' => $transaction->description ?? 'Pembayaran Iuran PGRI',
+                    // Map status to terverifikasi
+                    'terverifikasi' => $transaction->status === 'settlement' ? 'diterima' : 
+                                      ($transaction->status === 'cancel' || $transaction->status === 'deny' || $transaction->status === 'expire' ? 'ditolak' : 'pending'),
+                ];
+            });
 
         return Inertia::render('admin/notifikasi/index', [
             'notifikasis' => $notifikasis
@@ -20,57 +50,68 @@ class NotifikasiController extends Controller
 
     public function show($id)
     {
-        $notifikasi = Iuran::with('kabupaten')->findOrFail($id);
+        $transaction = Transaction::with('user')->findOrFail($id);
+        
+        $notifikasi = [
+            'id' => $transaction->id,
+            'order_id' => $transaction->order_id,
+            'transaction_id' => $transaction->transaction_id,
+            'gross_amount' => $transaction->gross_amount,
+            'payment_type' => $transaction->payment_type,
+            'payment_method' => $transaction->payment_method,
+            'status' => $transaction->status,
+            'description' => $transaction->description,
+            'transaction_time' => $transaction->transaction_time,
+            'settlement_time' => $transaction->settlement_time,
+            'created_at' => $transaction->created_at,
+            'updated_at' => $transaction->updated_at,
+            'user' => $transaction->user,
+            'kabupaten' => $transaction->user ? [
+                'name' => $transaction->user->nama_kabupaten,
+                'kode' => $transaction->user->kode_kabupaten,
+                'tipe' => 'Kabupaten', // Default tipe
+            ] : null,
+            'jumlah' => $transaction->gross_amount,
+            'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->format('Y-m-d') : $transaction->created_at->format('Y-m-d'),
+            'deskripsi' => $transaction->description ?? 'Pembayaran Iuran PGRI',
+            // Map status to terverifikasi
+            'terverifikasi' => $transaction->status === 'settlement' ? 'diterima' : 
+                              ($transaction->status === 'cancel' || $transaction->status === 'deny' || $transaction->status === 'expire' ? 'ditolak' : 'pending'),
+        ];
 
         return Inertia::render('admin/notifikasi/show', [
             'notifikasi' => $notifikasi,
         ]);
     }
 
+
     public function markAsRead($id)
     {
-        $notifikasi = Iuran::findOrFail($id);
+        $notifikasi = Transaction::findOrFail($id);
 
-        $notifikasi->terverifikasi = 'diterima';
+        $notifikasi->status = 'settlement';
+        $notifikasi->settlement_time = now();
         $notifikasi->save();
 
-        if ($notifikasi->iuran) {
-            $notifikasi->iuran->terverifikasi = 'diterima';
-            $notifikasi->iuran->save();
-        }
-
-        return redirect()->back()->with('success', 'Notifikasi dan terverifikasi iuran telah dikonfirmasi.');
+        return redirect()->back()->with('success', 'Transaksi telah dikonfirmasi (settlement).');
     }
 
     public function markAsCancel($id)
     {
-        $notifikasi = Iuran::findOrFail($id);
+        $notifikasi = Transaction::findOrFail($id);
 
-        $notifikasi->terverifikasi = 'ditolak';
+        $notifikasi->status = 'cancel';
         $notifikasi->save();
 
-        if ($notifikasi->iuran) {
-            $notifikasi->iuran->terverifikasi = 'ditolak';
-            $notifikasi->iuran->save();
-        }
-
-        return redirect()->back()->with('success', 'Notifikasi dan status iuran telah dibatalkan.');
+        return redirect()->back()->with('success', 'Transaksi telah dibatalkan.');
     }
 
     public function markAllAsRead()
     {
-        $iurans = Iuran::where('terverifikasi', 'pending')->get();
+        // Approve all pending transactions
+        Transaction::where('status', 'pending')
+            ->update(['status' => 'settlement']);
 
-        foreach ($iurans as $iuran) {
-            $iuran->terverifikasi = 'diterima';
-            $iuran->save();
-
-            if ($iuran->iuran) {
-                $iuran->iuran->terverifikasi = 'diterima';
-                $iuran->iuran->save();
-            }
-        }
-
-        return back()->with('success', 'Semua notifikasi berhasil di-ACC');
+        return back()->with('success', 'Semua transaksi pending berhasil di-ACC (settlement)');
     }
 }

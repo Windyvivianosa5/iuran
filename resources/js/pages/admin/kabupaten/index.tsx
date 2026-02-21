@@ -1,7 +1,7 @@
 'use client';
 
-import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,13 +28,26 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function KelolaKabupaten({ kabupaten }: any) {
     const [search, setSearch] = useState('');
+    const { props } = usePage<any>();
+    const [flashMessage, setFlashMessage] = useState<{type: 'success' | 'error', message: string} | null>(null);
+
+    useEffect(() => {
+        if (props.flash?.success) {
+            setFlashMessage({ type: 'success', message: props.flash.success });
+            setTimeout(() => setFlashMessage(null), 5000);
+        }
+        if (props.flash?.error) {
+            setFlashMessage({ type: 'error', message: props.flash.error });
+            setTimeout(() => setFlashMessage(null), 5000);
+        }
+    }, [props.flash]);
 
     const filteredKabupaten = kabupaten.filter((item: any) =>
         item.nama_kabupaten.toLowerCase().includes(search.toLowerCase())
     );
 
     const handleDelete = (id: number) => {
-        if (confirm('Apakah Anda yakin ingin menghapus kabupaten ini?')) {
+        if (confirm('Apakah Anda yakin ingin menghapus kabupaten ini? Semua data user dan iuran terkait akan ikut terhapus.')) {
             router.delete(route('admin.dashboard.kabupaten.destroy', id));
         }
     };
@@ -44,6 +57,25 @@ export default function KelolaKabupaten({ kabupaten }: any) {
             <Head title="Kelola Kabupaten" />
 
             <div className="space-y-6 p-6">
+                {/* Flash Messages */}
+                {flashMessage && (
+                    <div className={`rounded-lg border p-4 ${
+                        flashMessage.type === 'success' 
+                            ? 'border-green-200 bg-green-50 text-green-800' 
+                            : 'border-red-200 bg-red-50 text-red-800'
+                    }`}>
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm font-medium">{flashMessage.message}</p>
+                            <button 
+                                onClick={() => setFlashMessage(null)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div>
@@ -112,7 +144,6 @@ export default function KelolaKabupaten({ kabupaten }: any) {
                                         <TableHead className="font-semibold">Kode</TableHead>
                                         <TableHead className="font-semibold">Jumlah Anggota</TableHead>
                                         <TableHead className="font-semibold">Status</TableHead>
-                                        <TableHead className="font-semibold">User Login</TableHead>
                                         <TableHead className="text-right font-semibold">Aksi</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -140,19 +171,6 @@ export default function KelolaKabupaten({ kabupaten }: any) {
                                                     }`}>
                                                         {item.status === 'aktif' ? 'Aktif' : 'Nonaktif'}
                                                     </span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {item.users && item.users.length > 0 ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="inline-block h-2 w-2 rounded-full bg-green-500"></span>
-                                                            <span className="text-sm text-gray-700">{item.users[0].email}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="inline-block h-2 w-2 rounded-full bg-red-500"></span>
-                                                            <span className="text-sm text-gray-500">Belum ada</span>
-                                                        </div>
-                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <DropdownMenu>
