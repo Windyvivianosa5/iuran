@@ -49,13 +49,16 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
     `Rp ${Number(value).toLocaleString('id-ID')}`;
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleString('id-ID', {
+      timeZone: 'Asia/Jakarta',
       day: 'numeric',
-      month: 'short',
+      month: 'long',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    });
+      second: '2-digit',
+    }) + ' WIB';
   };
 
   const handleContinuePayment = (transaction: any) => {

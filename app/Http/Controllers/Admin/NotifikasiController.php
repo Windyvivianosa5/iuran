@@ -35,7 +35,7 @@ class NotifikasiController extends Controller
                         'tipe' => 'Kabupaten', // Default tipe
                     ] : null,
                     'jumlah' => $transaction->gross_amount,
-                    'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->format('Y-m-d') : $transaction->created_at->format('Y-m-d'),
+                    'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') : $transaction->created_at->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
                     'deskripsi' => $transaction->description ?? 'Pembayaran Iuran PGRI',
                     // Map status to terverifikasi
                     'terverifikasi' => $transaction->status === 'settlement' ? 'diterima' : 
@@ -72,7 +72,7 @@ class NotifikasiController extends Controller
                 'tipe' => 'Kabupaten', // Default tipe
             ] : null,
             'jumlah' => $transaction->gross_amount,
-            'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->format('Y-m-d') : $transaction->created_at->format('Y-m-d'),
+            'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') : $transaction->created_at->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
             'deskripsi' => $transaction->description ?? 'Pembayaran Iuran PGRI',
             // Map status to terverifikasi
             'terverifikasi' => $transaction->status === 'settlement' ? 'diterima' : 

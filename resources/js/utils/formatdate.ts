@@ -27,6 +27,8 @@ export function formatTanggalIndonesiaManual(inputTanggal: any) {
         'Desember',
     ];
 
+    // Data dari server sudah dalam timezone WIB (Asia/Jakarta)
+    // Parse langsung tanpa menambahkan Z
     const tanggal = new Date(inputTanggal.replace(' ', 'T'));
 
     const hari = String(tanggal.getDate()).padStart(2, '0');

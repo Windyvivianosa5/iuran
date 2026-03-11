@@ -109,9 +109,17 @@ class TransactionController extends Controller
     {
         // Log incoming webhook
         Log::info('=== MIDTRANS WEBHOOK RECEIVED ===');
+        Log::info('Raw Body: ' . $request->getContent());
         Log::info('Request Data: ' . json_encode($request->all()));
         
         try {
+            // Jika tidak ada data, kembalikan 200 agar Midtrans tidak retry
+            $rawBody = $request->getContent();
+            if (empty($rawBody)) {
+                Log::warning('Empty webhook body received');
+                return response()->json(['success' => true, 'message' => 'empty body'], 200);
+            }
+
             $notification = new Notification();
 
             $transactionStatus = $notification->transaction_status;
@@ -234,7 +242,8 @@ class TransactionController extends Controller
             Log::error('Error File: ' . $e->getFile());
             Log::error('Error Line: ' . $e->getLine());
             Log::error('Stack Trace: ' . $e->getTraceAsString());
-            return response()->json(['success' => false], 500);
+            // Return 200 agar Midtrans tidak retry terus-menerus
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 200);
         }
     }
 

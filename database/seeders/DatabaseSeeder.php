@@ -58,9 +58,9 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // Seed transaction data
-        $this->call([
-            TransactionSeeder::class,
-        ]);
+        // Seed transaction data dinonaktifkan - uncomment jika butuh data dummy
+        // $this->call([
+        //     TransactionSeeder::class,
+        // ]);
     }
 }
