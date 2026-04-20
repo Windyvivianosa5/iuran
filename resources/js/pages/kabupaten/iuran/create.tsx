@@ -10,8 +10,10 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { formatNumber, parseNumber } from '@/utils/formatInput';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { toast } from 'sonner';
+import axios from 'axios';
 
 // Extend Window interface for Midtrans
 declare global {
@@ -52,9 +54,32 @@ export default function Create() {
     const { midtransClientKey, isActive } = usePage<PageProps>().props;
     const [amount, setAmount] = React.useState('');
     const [description, setDescription] = React.useState('');
+    const [bulanPembayaran, setBulanPembayaran] = React.useState('');
+    const [tahunPembayaran, setTahunPembayaran] = React.useState(new Date().getFullYear().toString());
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [paymentStatus, setPaymentStatus] = React.useState<'idle' | 'success' | 'pending' | 'failed'>('idle');
     const [configError, setConfigError] = React.useState(false);
+
+    const MONTHS = [
+        { value: '01', label: 'Januari' },
+        { value: '02', label: 'Februari' },
+        { value: '03', label: 'Maret' },
+        { value: '04', label: 'April' },
+        { value: '05', label: 'Mei' },
+        { value: '06', label: 'Juni' },
+        { value: '07', label: 'Juli' },
+        { value: '08', label: 'Agustus' },
+        { value: '09', label: 'September' },
+        { value: '10', label: 'Oktober' },
+        { value: '11', label: 'November' },
+        { value: '12', label: 'Desember' },
+    ];
+
+    // Build the YYYY-MM string for submission
+    const getBulanPembayaranValue = () => {
+        if (!bulanPembayaran || !tahunPembayaran) return '';
+        return `${tahunPembayaran}-${bulanPembayaran}`;
+    };
 
     // Load Midtrans Snap script
     React.useEffect(() => {
@@ -102,6 +127,17 @@ export default function Create() {
             return;
         }
 
+        if (!bulanPembayaran || !tahunPembayaran) {
+            toast.error('Pilih bulan dan tahun pembayaran terlebih dahulu');
+            return;
+        }
+
+        const tahunNum = parseInt(tahunPembayaran);
+        if (isNaN(tahunNum) || tahunNum < 2000 || tahunNum > 2100) {
+            toast.error('Tahun pembayaran tidak valid');
+            return;
+        }
+
         if (configError) {
             toast.error('Konfigurasi Midtrans belum lengkap. Silakan hubungi administrator.');
             return;
@@ -111,28 +147,18 @@ export default function Create() {
 
         try {
             console.log('Creating transaction...');
-            const response = await fetch('/kabupaten/transaction/create', {
-                method: 'POST',
+            const response = await axios.post('/kabupaten/transaction/create', {
+                amount: numericAmount,
+                description: description || `Iuran Bulan ${MONTHS.find(m => m.value === bulanPembayaran)?.label} ${tahunPembayaran}`,
+                bulan_pembayaran: getBulanPembayaranValue(),
+            }, {
                 headers: {
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                body: JSON.stringify({
-                    amount: numericAmount,
-                    description: description || 'Pembayaran Iuran PGRI',
-                }),
+                }
             });
 
             console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server error:', errorText);
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            const data = await response.json();
+            const data = response.data;
             console.log('Response data:', data);
 
             if (data.success && data.snap_token) {
@@ -261,17 +287,53 @@ export default function Create() {
                                 <p className="text-xs text-gray-500">Minimal pembayaran Rp 1.000</p>
                             </div>
 
+                            {/* Bulan Pembayaran */}
+                            <div className="grid gap-2">
+                                <Label className="text-base font-semibold">
+                                    Bulan Pembayaran <span className="text-red-500">*</span>
+                                </Label>
+                                <div className="flex gap-3">
+                                    <div className="flex-1">
+                                        <Select value={bulanPembayaran} onValueChange={setBulanPembayaran}>
+                                            <SelectTrigger id="bulan" className="h-11">
+                                                <SelectValue placeholder="Pilih Bulan" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {MONTHS.map((m) => (
+                                                    <SelectItem key={m.value} value={m.value}>
+                                                        {m.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="w-32">
+                                        <Input
+                                            id="tahun"
+                                            type="number"
+                                            placeholder="Tahun"
+                                            value={tahunPembayaran}
+                                            onChange={(e) => setTahunPembayaran(e.currentTarget.value)}
+                                            min={2000}
+                                            max={2100}
+                                            className="h-11 text-center font-semibold"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500">Pilih bulan dan tahun iuran yang dibayarkan</p>
+                            </div>
+
                             {/* Description Input */}
                             <div className="grid gap-2">
                                 <Label htmlFor="description" className="text-base font-semibold">
-                                    Deskripsi Pembayaran
+                                    Catatan Tambahan
                                 </Label>
                                 <Textarea
                                     id="description"
-                                    placeholder="Contoh: Iuran Bulan Desember 2025"
+                                    placeholder="Contoh: Pembayaran iuran tepat waktu"
                                     value={description}
                                     onChange={(e) => setDescription(e.currentTarget.value)}
-                                    className="min-h-[100px]"
+                                    className="min-h-[80px]"
                                 />
                                 <p className="text-xs text-gray-500">Opsional - Tambahkan catatan untuk pembayaran ini</p>
                             </div>
@@ -308,7 +370,7 @@ export default function Create() {
                                 </Link>
                                 <Button
                                     type="submit"
-                                    disabled={isProcessing || !amount}
+                                    disabled={isProcessing || !amount || !bulanPembayaran || !tahunPembayaran}
                                     className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 sm:w-auto"
                                 >
                                     {isProcessing ? (

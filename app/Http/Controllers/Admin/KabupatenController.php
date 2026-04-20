@@ -153,7 +153,7 @@ class KabupatenController extends Controller
     {
         \DB::beginTransaction();
         try {
-            // Delete kabupaten user (iurans will be cascade deleted automatically)
+            // Delete kabupaten user (transactions will be cascade deleted automatically)
             $kabupaten->delete();
             
             \DB::commit();

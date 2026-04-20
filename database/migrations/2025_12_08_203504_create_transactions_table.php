@@ -22,6 +22,8 @@ return new class extends Migration
             $table->enum('status', ['pending', 'settlement', 'cancel', 'deny', 'expire', 'failure'])->default('pending');
             $table->string('snap_token')->nullable();
             $table->text('description')->nullable();
+            // Format: YYYY-MM (e.g. 2025-12 for Desember 2025)
+            $table->string('bulan_pembayaran', 7)->nullable();
             $table->timestamp('transaction_time')->nullable();
             $table->timestamp('settlement_time')->nullable();
             $table->json('metadata')->nullable();

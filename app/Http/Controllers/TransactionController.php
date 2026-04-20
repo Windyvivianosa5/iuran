@@ -32,6 +32,7 @@ class TransactionController extends Controller
         $request->validate([
             'amount' => 'required|numeric|min:1000',
             'description' => 'nullable|string|max:255',
+            'bulan_pembayaran' => ['required', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
         ]);
 
         try {
@@ -53,6 +54,7 @@ class TransactionController extends Controller
                 'order_id' => $orderId,
                 'gross_amount' => $request->amount,
                 'description' => $request->description ?? 'Pembayaran Iuran PGRI',
+                'bulan_pembayaran' => $request->bulan_pembayaran,
                 'status' => 'pending',
             ]);
 

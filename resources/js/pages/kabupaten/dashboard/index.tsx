@@ -299,7 +299,7 @@ export default function DashboardKabupaten() {
                             <table className="w-full border-separate border-spacing-y-2 text-sm">
                                 <thead className="bg-gray-100 text-gray-600 dark:bg-black dark:border-white">
                                     <tr>
-                                        <th className="px-3 py-2 text-left">ID Pesanan</th>
+                                        <th className="px-3 py-2 text-left">ID Pembayaran</th>
                                         <th className="px-3 py-2 text-left">Deskripsi</th>
                                         <th className="px-3 py-2 text-left">Jumlah</th>
                                         <th className="px-3 py-2 text-left">Status</th>
@@ -312,7 +312,7 @@ export default function DashboardKabupaten() {
                                             <td className="px-3 py-2 font-mono text-xs">{transaction.order_id}</td>
                                             <td className="px-3 py-2">{transaction.description}</td>
                                             <td className="px-3 py-2 font-medium text-blue-700">
-                                                {formatCurrency(transaction.amount)}
+                                                {formatCurrency(transaction.gross_amount)}
                                             </td>
                                             <td className="px-3 py-2">{getStatusBadge(transaction.status)}</td>
                                             <td className="px-3 py-2 text-gray-600">{transaction.created_at}</td>

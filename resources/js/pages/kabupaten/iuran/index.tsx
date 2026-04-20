@@ -61,6 +61,13 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
     }) + ' WIB';
   };
 
+  const formatBulanPembayaran = (value: string) => {
+    if (!value) return '-';
+    const [year, month] = value.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+    return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  };
+
   const handleContinuePayment = (transaction: any) => {
     if (!transaction.snap_token) {
       toast.error('Token pembayaran tidak tersedia');
@@ -162,7 +169,8 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID Pesanan</TableHead>
+                  <TableHead>ID Pembayaran</TableHead>
+                  <TableHead>Bulan Pembayaran</TableHead>
                   <TableHead>Deskripsi</TableHead>
                   <TableHead>Nominal</TableHead>
                   <TableHead>Metode</TableHead>
@@ -179,6 +187,15 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
                       className="border-b transition hover:bg-gray-50 dark:hover:bg-gray-800"
                     >
                       <TableCell className="font-mono text-xs">{transaction.order_id}</TableCell>
+                      <TableCell>
+                        {transaction.bulan_pembayaran ? (
+                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
+                            {formatBulanPembayaran(transaction.bulan_pembayaran)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-sm">-</span>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium">{transaction.description}</TableCell>
                       <TableCell className="font-semibold text-blue-700">
                         {formatRupiah(transaction.gross_amount)}
@@ -220,7 +237,7 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="py-8 text-center text-gray-500">
+                    <TableCell colSpan={8} className="py-8 text-center text-gray-500">
                       <div className="flex flex-col items-center gap-2">
                         <p className="font-medium">Belum ada transaksi pembayaran</p>
                         <p className="text-sm">Klik "Bayar Iuran" untuk melakukan pembayaran pertama</p>

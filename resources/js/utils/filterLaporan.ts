@@ -42,27 +42,40 @@ export function generateLaporan(data: any[], kabupatens: any[] = [], tahun = new
     const result: Record<string, LaporanPerKabupaten> = {};
 
     // Filter data sesuai tahun dan status settlement
-    // Data sekarang dari table 'transactions', jadi field-nya beda
     const filteredData = data.filter((item: any) => {
-        // Gunakan settlement_time atau created_at jika settlement belum ada (seharusnya ada kalau status settlement)
-        const dateString = item.settlement_time || item.created_at || item.tanggal; 
-        const tanggal = new Date(dateString);
-        
         // Cek status: 'settlement' (midtrans) atau 'diterima' (legacy/manual)
         const isSettled = item.status === 'settlement' || item.terverifikasi === 'diterima';
-        
-        return isSettled && tanggal.getFullYear() === tahun;
+        if (!isSettled) return false;
+
+        // Gunakan bulan_pembayaran (YYYY-MM) sebagai sumber utama penentuan tahun
+        if (item.bulan_pembayaran) {
+            const [bpTahun] = item.bulan_pembayaran.split('-');
+            return parseInt(bpTahun) === tahun;
+        }
+
+        // Fallback: gunakan settlement_time / created_at / tanggal
+        const dateString = item.settlement_time || item.created_at || item.tanggal;
+        const tanggal = new Date(dateString);
+        return tanggal.getFullYear() === tahun;
     });
 
     // Proses data transaksi yang difilter
     filteredData.forEach((item: any) => {
-        const dateString = item.settlement_time || item.created_at || item.tanggal;
-        const tanggal = new Date(dateString);
         const kabupatenName = item.user?.nama_kabupaten || 'Tidak Diketahui';
         const anggota = item.user?.jumlah_anggota || 0;
-        const bulanIndex = tanggal.getMonth();
+
+        // Tentukan bulan dari bulan_pembayaran lebih dulu, lalu fallback ke tanggal transaksi
+        let bulanIndex: number;
+        if (item.bulan_pembayaran) {
+            const [, bpBulan] = item.bulan_pembayaran.split('-');
+            bulanIndex = parseInt(bpBulan) - 1; // 0-indexed
+        } else {
+            const dateString = item.settlement_time || item.created_at || item.tanggal;
+            bulanIndex = new Date(dateString).getMonth();
+        }
+
         const bulanKey = bulanMap[bulanIndex];
-        
+
         // Gunakan gross_amount (midtrans) atau jumlah (legacy)
         const jumlah = parseFloat(item.gross_amount || item.jumlah);
 

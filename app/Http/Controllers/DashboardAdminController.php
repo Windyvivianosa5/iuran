@@ -38,8 +38,16 @@ class DashboardAdminController extends Controller
             $type = $kabupatenName !== 'Tidak Diketahui' ? $getKabupatenType($kabupatenName) : '';
             $formattedName = $kabupatenName !== 'Tidak Diketahui' ? "PGRI {$type} {$kabupatenName}" : 'Tidak Diketahui';
 
+            // Gunakan bulan_pembayaran jika ada, fallback ke settlement_time
+            if ($item->bulan_pembayaran) {
+                [$tahun, $bulan] = explode('-', $item->bulan_pembayaran);
+                $bulanLabel = \Carbon\Carbon::create((int)$tahun, (int)$bulan, 1)->locale('id')->isoFormat('MMMM YYYY');
+            } else {
+                $bulanLabel = \Carbon\Carbon::parse($item->settlement_time ?? $item->created_at)->locale('id')->translatedFormat('F');
+            }
+
             return [
-                'bulan' => \Carbon\Carbon::parse($item->settlement_time ?? $item->created_at)->locale('id')->translatedFormat('F'),
+                'bulan' => $bulanLabel,
                 'kabupaten' => $formattedName,
                 'total_iuran' => $item->gross_amount,
             ];
@@ -58,22 +66,23 @@ class DashboardAdminController extends Controller
             ];
         });
 
-        // Fetch monthly contribution report
-        $laporans = Transaction::select(
-            DB::raw('MONTH(settlement_time) as bulan'),
-            DB::raw('SUM(gross_amount) as total_iuran')
-        )
-            ->where('status', 'settlement')
-            ->whereNotNull('settlement_time')
-            ->groupBy(DB::raw('MONTH(settlement_time)'))
-            ->orderBy(DB::raw('MONTH(settlement_time)'))
+        // Fetch monthly contribution report — prioritaskan bulan_pembayaran
+        $laporans = Transaction::where('status', 'settlement')
             ->get()
-            ->map(function ($item) {
+            ->groupBy(function ($item) {
+                if ($item->bulan_pembayaran) {
+                    return (int) explode('-', $item->bulan_pembayaran)[1];
+                }
+                return (int) Carbon::parse($item->settlement_time ?? $item->created_at)->format('n');
+            })
+            ->map(function ($group, $bulanIndex) {
                 return [
-                    'bulan' => \Carbon\Carbon::create()->month($item->bulan)->locale('id')->isoFormat('MMMM'),
-                    'total_iuran' => (float) $item->total_iuran, // Ensure numeric type
+                    'bulan' => \Carbon\Carbon::create()->month($bulanIndex)->locale('id')->isoFormat('MMMM'),
+                    'total_iuran' => (float) $group->sum('gross_amount'),
                 ];
-            });
+            })
+            ->sortKeys()
+            ->values();
 
         // Ambil data transaksi yang sudah ada di database
         $existingTransactions = Transaction::select(

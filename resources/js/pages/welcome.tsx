@@ -1,17 +1,7 @@
-'use client';
-
-import { generateLaporan } from '@/utils/filterLaporan';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
 
 export default function Welcome() {
-    const { auth, iuran } = usePage<any>().props;
-    const [datas, setDatas] = useState([]);
-
-    useEffect(() => {
-        const laporan: any = generateLaporan(iuran);
-        setDatas(laporan);
-    }, []);
+    const { auth } = usePage<any>().props;
 
     const fiturList = [
         { label: 'Rekap Keuangan Bulanan', description: 'Pantau pemasukan dan pengeluaran setiap bulan', color: 'border-blue-500' },
@@ -75,7 +65,7 @@ export default function Welcome() {
 
                 {/* FOOTER */}
                 <footer className="mt-20 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    © 2025 PGRI Riau • Sistem Rekap Iuran Digital
+                    © 2026 PGRI Riau • Sistem Rekap Iuran Digital
                 </footer>
             </div>
         </>

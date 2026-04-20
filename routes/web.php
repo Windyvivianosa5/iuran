@@ -8,14 +8,9 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\Admin\NotifikasiController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Models\Iuran;
 
 Route::get('/', function () {
-    $iuran = Iuran::all();
-        
-    return Inertia::render('welcome', [
-            'iuran' => $iuran,
-        ]);
+    return Inertia::render('welcome');
 })->name('home');
 
 // Midtrans webhook (public route)

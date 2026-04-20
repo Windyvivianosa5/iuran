@@ -20,6 +20,7 @@ class Transaction extends Model
         'status',
         'snap_token',
         'description',
+        'bulan_pembayaran',
         'transaction_time',
         'settlement_time',
         'metadata',

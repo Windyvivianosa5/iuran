@@ -32,8 +32,16 @@ class DashboardKabupatenController extends Controller
             $type = in_array($kabupatenName, $kotaList) ? 'Kota' : 'Kabupaten';
             $formattedName = "PGRI {$type} {$kabupatenName}";
 
+            // Gunakan bulan_pembayaran jika ada
+            if ($item->bulan_pembayaran) {
+                [$tahun, $bulan] = explode('-', $item->bulan_pembayaran);
+                $bulanLabel = Carbon::create((int)$tahun, (int)$bulan, 1)->locale('id')->isoFormat('MMMM YYYY');
+            } else {
+                $bulanLabel = Carbon::parse($item->settlement_time ?? $item->created_at)->locale('id')->translatedFormat('F');
+            }
+
             return [
-                'bulan' => \Carbon\Carbon::parse($item->settlement_time ?? $item->created_at)->locale('id')->translatedFormat('F'),
+                'bulan' => $bulanLabel,
                 'kabupaten' => $formattedName,
                 'total_iuran' => $item->gross_amount,
             ];
@@ -52,22 +60,25 @@ class DashboardKabupatenController extends Controller
             ];
         });
 
-        // Laporan bulanan untuk user login based on transactions
-        $laporans = Transaction::select(
-            DB::raw('MONTH(COALESCE(settlement_time, created_at)) as bulan'),
-            DB::raw('SUM(gross_amount) as total_iuran')
-        )
-            ->where('user_id', $user->id)
+        // Laporan bulanan — prioritaskan bulan_pembayaran, fallback ke settlement_time
+        $laporans = Transaction::where('user_id', $user->id)
             ->where('status', 'settlement')
-            ->groupBy(DB::raw('MONTH(COALESCE(settlement_time, created_at))'))
-            ->orderBy(DB::raw('MONTH(COALESCE(settlement_time, created_at))'))
             ->get()
-            ->map(function ($item) {
+            ->groupBy(function ($item) {
+                // Gunakan bulan dari bulan_pembayaran jika ada, else dari settlement_time
+                if ($item->bulan_pembayaran) {
+                    return (int) explode('-', $item->bulan_pembayaran)[1];
+                }
+                return (int) Carbon::parse($item->settlement_time ?? $item->created_at)->format('n');
+            })
+            ->map(function ($group, $bulanIndex) {
                 return [
-                    'bulan' => \Carbon\Carbon::create()->month($item->bulan)->locale('id')->isoFormat('MMMM'),
-                    'total_iuran' => (float) $item->total_iuran,
+                    'bulan' => Carbon::create()->month($bulanIndex)->locale('id')->isoFormat('MMMM'),
+                    'total_iuran' => (float) $group->sum('gross_amount'),
                 ];
-            });
+            })
+            ->sortKeys()
+            ->values();
 
         $kabupatenName = $user->nama_kabupaten ?? $user->name;
         $type = in_array($kabupatenName, $kotaList) ? 'Kota' : 'Kabupaten';
@@ -82,7 +93,7 @@ class DashboardKabupatenController extends Controller
                 return [
                     'id' => $transaction->id,
                     'order_id' => $transaction->order_id,
-                    'amount' => $transaction->gross_amount,
+                    'gross_amount' => $transaction->gross_amount,
                     'status' => $transaction->status,
                     'description' => $transaction->description,
                     'created_at' => $transaction->created_at->format('d M Y H:i'),
@@ -94,11 +105,22 @@ class DashboardKabupatenController extends Controller
         $currentMonth = Carbon::now()->month;
         
         // Ambil bulan-bulan yang sudah dibayar (settlement) di tahun ini
+        // Prioritaskan bulan_pembayaran, fallback ke settlement_time
         $paidMonths = Transaction::where('user_id', $user->id)
             ->where('status', 'settlement')
-            ->whereYear('settlement_time', $currentYear)
             ->get()
+            ->filter(function ($transaction) use ($currentYear) {
+                if ($transaction->bulan_pembayaran) {
+                    $tahun = (int) explode('-', $transaction->bulan_pembayaran)[0];
+                    return $tahun === $currentYear;
+                }
+                return $transaction->settlement_time &&
+                       Carbon::parse($transaction->settlement_time)->year === $currentYear;
+            })
             ->map(function ($transaction) {
+                if ($transaction->bulan_pembayaran) {
+                    return (int) explode('-', $transaction->bulan_pembayaran)[1];
+                }
                 return Carbon::parse($transaction->settlement_time)->month;
             })
             ->unique()
