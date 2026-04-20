@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 class CheckUnpaidUsers extends Command
 {
-    protected $signature = 'check:unpaid-users';
+    protected $signature = 'check:unpaid-users {--force : Abaikan pengecekan sisa 7 hari} {--email= : Nomor/alamat email spesifik}';
 
     protected $description = 'Kirim email pengingat ke user yang belum bayar iuran bulan ini (7 hari sebelum akhir bulan)';
 
@@ -24,9 +24,10 @@ class CheckUnpaidUsers extends Command
 
         Log::info("Checking unpaid users. Days until end of month: {$daysUntilEndOfMonth}");
 
-        // Hanya kirim reminder di 7 hari terakhir bulan
-        if ($daysUntilEndOfMonth > 7) {
+        // Hanya kirim reminder di 7 hari terakhir bulan, atau jika --force digunakan
+        if ($daysUntilEndOfMonth > 7 && !$this->option('force')) {
             $this->info("Bukan periode reminder. Hari tersisa: {$daysUntilEndOfMonth}");
+            $this->info("Gunakan opsi --force untuk memaksa pengiriman hari ini.");
             Log::info("Not in reminder period. Skipping.");
             return 0;
         }
@@ -34,13 +35,18 @@ class CheckUnpaidUsers extends Command
         $this->info("Periode reminder aktif. Hari tersisa: {$daysUntilEndOfMonth}");
 
         // Ambil user kabupaten yang BELUM bayar bulan ini
-        $unpaidUsers = User::where('role', 'kabupaten')
-            ->whereDoesntHave('transactions', function($query) use ($today) {
-                $query->whereMonth('created_at', $today->month)
-                      ->whereYear('created_at', $today->year)
-                      ->where('status', 'settlement');
-            })
-            ->get();
+        $query = User::where('role', 'kabupaten')
+            ->whereDoesntHave('transactions', function($q) use ($today) {
+                $q->where('bulan_pembayaran', $today->format('Y-m'))
+                  ->where('status', 'settlement');
+            });
+            
+        if ($this->option('email')) {
+            $query->where('email', $this->option('email'));
+            $this->info("Filter aktif untuk email: " . $this->option('email'));
+        }
+
+        $unpaidUsers = $query->get();
 
         if ($unpaidUsers->isEmpty()) {
             $this->info('Semua user sudah membayar bulan ini.');

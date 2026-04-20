@@ -46,6 +46,8 @@ class TransactionController extends Controller
                 ], 403);
             }
             
+
+            
             $orderId = 'TRX-' . $user->id . '-' . time();
 
             // Create transaction record
@@ -167,6 +169,11 @@ class TransactionController extends Controller
                     Log::info("Status updated to settlement (from capture)");
                 }
             } elseif ($transactionStatus == 'settlement') {
+                if ($transaction->status === 'settlement' && $transaction->settlement_time) {
+                    Log::info("=== ALREADY PROCESSED SETTLEMENT - SKIPPING EMAIL ===");
+                    return response()->json(['success' => true]);
+                }
+
                 Log::info("=== STATUS IS SETTLEMENT - PROCESSING EMAIL ===");
                 
                 $transaction->update([

@@ -232,6 +232,16 @@
                     <span class="detail-value">{{ \Carbon\Carbon::parse($transaction->created_at)->format('d M Y, H:i') }} WIB</span>
                 </div>
                 <div class="detail-row">
+                    <span class="detail-label">Bulan Pembayaran : </span>
+                    <span class="detail-value">
+                        @if($transaction->bulan_pembayaran)
+                            {{ \Carbon\Carbon::createFromFormat('Y-m', $transaction->bulan_pembayaran)->locale('id')->translatedFormat('F Y') }}
+                        @else
+                            -
+                        @endif
+                    </span>
+                </div>
+                <div class="detail-row">
                     <span class="detail-label">Metode Pembayaran : </span>
                     <span class="detail-value">{{ ucwords(str_replace('_', ' ', $transaction->payment_type ?? 'Midtrans')) }}</span>
                 </div>
