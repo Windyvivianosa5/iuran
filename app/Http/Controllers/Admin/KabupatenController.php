@@ -46,7 +46,6 @@ class KabupatenController extends Controller
             'jumlah_anggota' => 'required|integer|min:0',
             'status' => 'required|in:aktif,nonaktif',
             // User validation
-            'user_name' => 'required|string|max:255',
             'user_email' => 'required|email|unique:users,email',
             'user_password' => 'required|string|min:8|confirmed',
         ], [
@@ -57,7 +56,6 @@ class KabupatenController extends Controller
             'jumlah_anggota.integer' => 'Jumlah anggota harus berupa angka',
             'jumlah_anggota.min' => 'Jumlah anggota tidak boleh kurang dari 0',
             'status.required' => 'Status harus dipilih',
-            'user_name.required' => 'Nama user harus diisi',
             'user_email.required' => 'Email harus diisi',
             'user_email.email' => 'Format email tidak valid',
             'user_email.unique' => 'Email sudah terdaftar',
@@ -70,7 +68,7 @@ class KabupatenController extends Controller
         try {
             // Create user with kabupaten role
             $user = User::create([
-                'name' => $validated['user_name'],
+                'name' => $validated['nama_kabupaten'],
                 'email' => $validated['user_email'],
                 'password' => \Hash::make($validated['user_password']),
                 'role' => 'kabupaten',

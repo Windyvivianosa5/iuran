@@ -99,22 +99,24 @@ export default function Create() {
             return;
         }
 
+        const scriptId = 'midtrans-snap-script';
+        // Cegah duplikasi inject script di Single Page Application (Inertia)
+        if (document.getElementById(scriptId)) {
+            return;
+        }
+
         const script = document.createElement('script');
+        script.id = scriptId;
         script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
         script.setAttribute('data-client-key', midtransClientKey);
-        script.onload = () => {
-        };
+        
         script.onerror = () => {
             console.error('Failed to load Midtrans Snap.js');
-            toast.error('Gagal memuat Midtrans. Silakan refresh halaman.');
+            toast.error('Gagal memuat sistem Midtrans. Silakan refresh halaman.');
         };
         document.body.appendChild(script);
 
-        return () => {
-            if (document.body.contains(script)) {
-                document.body.removeChild(script);
-            }
-        };
+        // Tidak perlu di-remove saat pindah halaman agar event listener Midtrans tidak bocor/berlipat
     }, [midtransClientKey, isActive]);
 
     const handlePayment = async (e: React.FormEvent) => {

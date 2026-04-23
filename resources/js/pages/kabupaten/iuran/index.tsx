@@ -33,16 +33,18 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
   React.useEffect(() => {
     if (!midtransClientKey) return;
 
+    const scriptId = 'midtrans-snap-script';
+    // Gunakan script yang sama (Jangan di-load ulang) agar memori tak bertumpuk
+    if (document.getElementById(scriptId)) {
+      return;
+    }
+
     const script = document.createElement('script');
+    script.id = scriptId;
     script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
     script.setAttribute('data-client-key', midtransClientKey);
     document.body.appendChild(script);
 
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
   }, [midtransClientKey]);
 
   const formatRupiah = (value: number) =>

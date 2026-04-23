@@ -15,6 +15,8 @@ class NotifikasiController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($transaction) {
+                $kotaList = ['Pekanbaru', 'Dumai'];
+                $tipeKabupaten = ($transaction->user && in_array($transaction->user->nama_kabupaten, $kotaList)) ? 'Kota' : 'Kabupaten';
                 return [
                     'id' => $transaction->id,
                     'order_id' => $transaction->order_id,
@@ -32,7 +34,7 @@ class NotifikasiController extends Controller
                     'kabupaten' => $transaction->user ? [
                         'name' => $transaction->user->nama_kabupaten,
                         'kode' => $transaction->user->kode_kabupaten,
-                        'tipe' => 'Kabupaten', // Default tipe
+                        'tipe' => $tipeKabupaten,
                     ] : null,
                     'jumlah' => $transaction->gross_amount,
                     'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') : $transaction->created_at->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s'),
@@ -52,6 +54,9 @@ class NotifikasiController extends Controller
     {
         $transaction = Transaction::with('user')->findOrFail($id);
         
+        $kotaList = ['Pekanbaru', 'Dumai'];
+        $tipeKabupaten = ($transaction->user && in_array($transaction->user->nama_kabupaten, $kotaList)) ? 'Kota' : 'Kabupaten';
+
         $notifikasi = [
             'id' => $transaction->id,
             'order_id' => $transaction->order_id,
@@ -69,7 +74,7 @@ class NotifikasiController extends Controller
             'kabupaten' => $transaction->user ? [
                 'name' => $transaction->user->nama_kabupaten,
                 'kode' => $transaction->user->kode_kabupaten,
-                'tipe' => 'Kabupaten', // Default tipe
+                'tipe' => $tipeKabupaten,
             ] : null,
             'jumlah' => $transaction->gross_amount,
             'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s') : $transaction->created_at->setTimezone('Asia/Jakarta')->format('Y-m-d H:i:s'),

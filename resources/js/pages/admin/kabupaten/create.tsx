@@ -21,7 +21,6 @@ interface KabupatenFormData {
     jumlah_anggota: string;
     status: string;
     create_user: boolean;
-    user_name: string;
     user_email: string;
     user_password: string;
     user_password_confirmation: string;
@@ -36,7 +35,6 @@ export default function CreateKabupaten() {
         status: 'aktif',
         // User fields
         create_user: true,
-        user_name: '',
         user_email: '',
         user_password: '',
         user_password_confirmation: '',
@@ -72,7 +70,7 @@ export default function CreateKabupaten() {
                             {/* Section: Data Kabupaten */}
                             <div className="space-y-4">
                                 <div className="border-b border-gray-200 pb-2">
-                                    <h3 className="text-lg font-semibold text-gray-900">📍 Data Kabupaten</h3>
+                                    <h3 className="text-lg font-semibold text-gray-900">Data Kabupaten</h3>
                                     <p className="text-sm text-gray-500">Informasi dasar kabupaten/kota</p>
                                 </div>
 
@@ -86,7 +84,7 @@ export default function CreateKabupaten() {
                                         type="text"
                                         value={data.nama_kabupaten}
                                         onChange={(e) => setData('nama_kabupaten', e.currentTarget.value)}
-                                        placeholder="Contoh: Kabupaten Bandung"
+                                        placeholder="Contoh: Kabupaten Pelalawan"
                                         className={getError('nama_kabupaten') ? 'border-red-500' : ''}
                                     />
                                     {getError('nama_kabupaten') && (
@@ -104,7 +102,7 @@ export default function CreateKabupaten() {
                                         type="text"
                                         value={data.kode_kabupaten}
                                         onChange={(e) => setData('kode_kabupaten', e.currentTarget.value.toUpperCase())}
-                                        placeholder="Contoh: BDG"
+                                        placeholder="Contoh: PLW"
                                         maxLength={10}
                                         className={getError('kode_kabupaten') ? 'border-red-500' : ''}
                                     />
@@ -159,7 +157,7 @@ export default function CreateKabupaten() {
                                 <div className="border-b border-gray-200 pb-2">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900">👤 Akun Login Kabupaten</h3>
+                                            <h3 className="text-lg font-semibold text-gray-900">Akun Login Kabupaten</h3>
                                             <p className="text-sm text-gray-500">Buat akun untuk user kabupaten</p>
                                         </div>
                                         <label className="flex items-center gap-2">
@@ -176,23 +174,7 @@ export default function CreateKabupaten() {
 
                                 {data.create_user && (
                                     <div className="space-y-4 rounded-lg bg-blue-50 p-4">
-                                        {/* Nama User */}
-                                        <div className="space-y-2">
-                                            <Label htmlFor="user_name">
-                                                Nama Lengkap <span className="text-red-500">*</span>
-                                            </Label>
-                                            <Input
-                                                id="user_name"
-                                                type="text"
-                                                value={data.user_name}
-                                                onChange={(e) => setData('user_name', e.currentTarget.value)}
-                                                placeholder="Contoh: Budi Santoso"
-                                                className={getError('user_name') ? 'border-red-500' : ''}
-                                            />
-                                            {getError('user_name') && (
-                                                <p className="text-sm text-red-500">{getError('user_name')}</p>
-                                            )}
-                                        </div>
+                                        {/* Akun Login */}
 
                                         {/* Email */}
                                         <div className="space-y-2">
@@ -204,7 +186,7 @@ export default function CreateKabupaten() {
                                                 type="email"
                                                 value={data.user_email}
                                                 onChange={(e) => setData('user_email', e.currentTarget.value)}
-                                                placeholder="Contoh: budi@pgri-bdg.id"
+                                                placeholder="Contoh: pelalawan@pgri.com"
                                                 className={getError('user_email') ? 'border-red-500' : ''}
                                             />
                                             {getError('user_email') && (

@@ -59,7 +59,7 @@ export default function NotifikasiIndex() {
                                                     href={route('admin.dashboard.notifikasi.show', notif.id)}
                                                     className="text-lg font-semibold text-gray-900 hover:text-blue-600"
                                                 >
-                                                    {notif.kabupaten?.name}
+                                                    {notif.kabupaten?.tipe ?? 'Kabupaten'} {notif.kabupaten?.name}
                                                 </Link>
                                                 {getStatusBadge(notif.terverifikasi)}
                                             </div>
