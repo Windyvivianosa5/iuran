@@ -202,9 +202,16 @@ export default function Create() {
                 toast.error(data.message || 'Gagal membuat transaksi');
                 setIsProcessing(false);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Payment error:', error);
-            toast.error('Terjadi kesalahan saat memproses pembayaran. Silakan cek console untuk detail.');
+            
+            // Tangkap pesan spesifik dari controller backend (seperti error 422 "Masih ada tagihan PENDING")
+            let errorMessage = 'Terjadi kesalahan saat memproses pembayaran. Silakan cek console untuk detail.';
+            if (error.response && error.response.data && error.response.data.message) {
+                errorMessage = error.response.data.message;
+            }
+            
+            toast.error(errorMessage);
             setIsProcessing(false);
         }
     };

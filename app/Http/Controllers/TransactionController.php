@@ -46,6 +46,20 @@ class TransactionController extends Controller
                 ], 403);
             }
             
+            // Mencegah pembuatan double data invoice (Pending) untuk bulan yang sama.
+            // Namun tetap mengizinkan sukses bayar (Settlement) berkali-kali untuk sistem mencicil/mengangsur.
+            $existingPending = Transaction::where('user_id', $user->id)
+                ->where('bulan_pembayaran', $request->bulan_pembayaran)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($existingPending) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal membuat transaksi: Masih ada tagihan Anda yang SEDANG DIPROSES untuk bulan tersebut. Selesaikan pembayaran di halaman riwayat.',
+                ], 422);
+            }
+            
 
             
             $orderId = 'TRX-' . $user->id . '-' . time();

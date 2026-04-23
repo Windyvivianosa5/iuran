@@ -18,9 +18,12 @@ Route::post('/midtrans/notification', [TransactionController::class, 'notificati
 Route::post('/user/payment/callback', [TransactionController::class, 'notification'])->name('midtrans.callback'); // Alternative URL
 
 
-Route::middleware(['auth', 'verified','role:user'])->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
+        if (auth()->user()->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+        return redirect()->route('kabupaten.dashboard');
     })->name('dashboard');
 });
 
