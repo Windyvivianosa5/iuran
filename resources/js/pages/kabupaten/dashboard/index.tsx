@@ -6,7 +6,8 @@ import { ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { formatCurrency } from '@/utils/formatRupiah';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
+import { toast } from 'sonner';
 
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
 
@@ -32,80 +33,23 @@ export default function DashboardKabupaten() {
         unpaidMonths = []
     } = usePage().props as any;
 
-    const [showPaymentModal, setShowPaymentModal] = React.useState(false);
-    const [paymentAmount, setPaymentAmount] = React.useState('');
-    const [paymentDescription, setPaymentDescription] = React.useState('');
-    const [isProcessing, setIsProcessing] = React.useState(false);
     const [showUnpaidAlert, setShowUnpaidAlert] = React.useState(true);
 
-    // Load Midtrans Snap script
+    // Load Midtrans Snap script — cegah duplikat di SPA (Inertia)
     React.useEffect(() => {
+        if (!midtransClientKey) return;
+
+        const scriptId = 'midtrans-snap-script';
+        if (document.getElementById(scriptId)) return;
+
         const script = document.createElement('script');
+        script.id = scriptId;
         script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
         script.setAttribute('data-client-key', midtransClientKey);
         document.body.appendChild(script);
 
-        return () => {
-            document.body.removeChild(script);
-        };
+        // Tidak di-remove saat unmount agar snap.js tidak perlu dimuat ulang
     }, [midtransClientKey]);
-
-    const handlePayment = async () => {
-        if (!paymentAmount || parseFloat(paymentAmount) < 1000) {
-            alert('Jumlah pembayaran minimal Rp 1.000');
-            return;
-        }
-
-        setIsProcessing(true);
-
-        try {
-            const response = await fetch('/kabupaten/transaction/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                body: JSON.stringify({
-                    amount: parseFloat(paymentAmount),
-                    description: paymentDescription || 'Pembayaran Iuran PGRI',
-                }),
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.snap_token) {
-                // @ts-ignore
-                window.snap.pay(data.snap_token, {
-                    onSuccess: function(result: any) {
-                        console.log('Payment success:', result);
-                        setShowPaymentModal(false);
-                        setPaymentAmount('');
-                        setPaymentDescription('');
-                        router.reload();
-                    },
-                    onPending: function(result: any) {
-                        console.log('Payment pending:', result);
-                        setShowPaymentModal(false);
-                        alert('Pembayaran sedang diproses');
-                    },
-                    onError: function(result: any) {
-                        console.log('Payment error:', result);
-                        alert('Pembayaran gagal');
-                    },
-                    onClose: function() {
-                        console.log('Payment popup closed');
-                    }
-                });
-            } else {
-                alert(data.message || 'Gagal membuat transaksi');
-            }
-        } catch (error) {
-            console.error('Payment error:', error);
-            alert('Terjadi kesalahan saat memproses pembayaran');
-        } finally {
-            setIsProcessing(false);
-        }
-    };
 
     const getStatusBadge = (status: string) => {
         const badges: Record<string, { color: string; text: string }> = {
@@ -288,9 +232,6 @@ export default function DashboardKabupaten() {
                     </CardContent>
                 </Card>
 
-                {/* Payment Button */}
-        
-
                 {/* Recent Transactions */}
                 {recentTransactions.length > 0 && (
                     <Card className="bg-white shadow-md dark:bg-black dark:border-white">
@@ -322,59 +263,6 @@ export default function DashboardKabupaten() {
                             </table>
                         </CardContent>
                     </Card>
-                )}
-
-                {/* Payment Modal */}
-                {showPaymentModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                        <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-                            <h2 className="mb-4 text-xl font-bold text-gray-800">Pembayaran Iuran</h2>
-                            
-                            <div className="mb-4">
-                                <label className="mb-2 block text-sm font-medium text-gray-700">
-                                    Jumlah Pembayaran (Rp)
-                                </label>
-                                <input
-                                    type="number"
-                                    value={paymentAmount}
-                                    onChange={(e) => setPaymentAmount(e.target.value)}
-                                    placeholder="Minimal Rp 1.000"
-                                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                    min="1000"
-                                />
-                            </div>
-
-                            <div className="mb-6">
-                                <label className="mb-2 block text-sm font-medium text-gray-700">
-                                    Deskripsi (Opsional)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={paymentDescription}
-                                    onChange={(e) => setPaymentDescription(e.target.value)}
-                                    placeholder="Contoh: Iuran Bulan Desember 2025"
-                                    className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                />
-                            </div>
-
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowPaymentModal(false)}
-                                    className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-50"
-                                    disabled={isProcessing}
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={handlePayment}
-                                    disabled={isProcessing}
-                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-white transition hover:bg-blue-700 disabled:bg-gray-400"
-                                >
-                                    {isProcessing ? 'Memproses...' : 'Bayar Sekarang'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 )}
             </div>
         </AppLayout>

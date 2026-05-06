@@ -5,6 +5,7 @@ use App\Http\Controllers\KabupatenController;
 use App\Http\Controllers\DashboardAdminController;
 use App\Http\Controllers\DashboardKabupatenController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\TransactionStatusController;
 use App\Http\Controllers\Admin\NotifikasiController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -13,9 +14,8 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-// Midtrans webhook (public route)
+// Midtrans webhook (public route - tanpa auth agar Midtrans bisa POST)
 Route::post('/midtrans/notification', [TransactionController::class, 'notification'])->name('midtrans.notification');
-Route::post('/user/payment/callback', [TransactionController::class, 'notification'])->name('midtrans.callback'); // Alternative URL
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -38,6 +38,10 @@ Route::middleware(['auth', 'verified','role:admin'])->group(function () {
     Route::post('admin/dashboard/notifikasi/{id}/mark-as-read', [NotifikasiController::class, 'markAsRead'])->name('admin.dashboard.notifikasi.markAsRead');
     Route::post('admin/dashboard/notifikasi/{id}/mark-as-cancel', [NotifikasiController::class, 'markAsCancel'])->name('admin.dashboard.notifikasi.markAsCancel');
     Route::post('/dashboard/notifikasi/mark-all-read', [NotifikasiController::class, 'markAllAsRead'])->name('admin.dashboard.notifikasi.markAllAsRead');
+
+    // Transaction Status routes (sinkronisasi status transaksi dari Midtrans)
+    Route::get('admin/dashboard/transaction/{orderId}/sync', [TransactionStatusController::class, 'checkAndUpdate'])->name('admin.transaction.sync');
+    Route::post('admin/dashboard/transactions/sync-all-pending', [TransactionStatusController::class, 'checkAllPending'])->name('admin.transaction.sync-all');
 
     // Kelola Kabupaten routes
     Route::get('admin/dashboard/kabupaten', [\App\Http\Controllers\Admin\KabupatenController::class, 'index'])->name('admin.dashboard.kabupaten.index');
