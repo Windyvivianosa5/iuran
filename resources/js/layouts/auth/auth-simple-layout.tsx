@@ -16,7 +16,7 @@ export default function AuthSimpleLayout({ children, title, description }: Props
                         <Link href={route('home')} className="flex flex-col items-center gap-2 font-medium">
                             <div className="mb-1 flex h-20 w-20 items-center justify-center rounded-md">
                                 {/* <AppLogoIcon className="size-9 fill-current text-[var(--foreground)] dark:text-white" /> */}
-                                <img src="pgri1.png" alt="logo PGRI" className=" " />
+                                <img src="pgri1.webp" alt="logo PGRI" className=" " />
                             </div>
                             <span className="sr-only">{title}</span>
                         </Link>

@@ -44,7 +44,7 @@ export default function Welcome() {
                             Lihat Rekap Iuran
                         </Link> */}
                     </div>
-                    <img src="/pgri1.png" alt="PGRI Logo" className="h-64 w-64 object-contain" />
+                    <img src="/pgri1.webp" alt="PGRI Logo" className="h-64 w-64 object-contain" />
                 </section>
 
                 {/* FITUR SECTION */}
