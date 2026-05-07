@@ -42,14 +42,14 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($kabupatens as $index => $kab) {
-            User::firstOrCreate(
-                ['email' => strtolower($kab['kode']) . '@pgri.com'],
+            User::updateOrCreate(
+                ['kode_kabupaten' => $kab['kode']],
                 [
+                    'email' => strtolower(str_replace(' ', '', $kab['nama'])) . '@gmail.com',
                     'name' => 'Admin ' . $kab['nama'],
                     'password' => Hash::make('password123'),
                     'role' => 'kabupaten',
                     'nama_kabupaten' => $kab['nama'],
-                    'kode_kabupaten' => $kab['kode'],
                     'anggota' => $kab['anggota'],
                     'jumlah_anggota' => $kab['anggota'],
                     'status' => 'aktif',
