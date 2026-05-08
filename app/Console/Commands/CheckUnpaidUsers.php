@@ -34,8 +34,9 @@ class CheckUnpaidUsers extends Command
 
         $this->info("Periode reminder aktif. Hari tersisa: {$daysUntilEndOfMonth}");
 
-        // Ambil user kabupaten yang BELUM bayar bulan ini
+        // Ambil user kabupaten yang AKTIF dan BELUM bayar bulan ini
         $query = User::where('role', 'kabupaten')
+            ->where('status', 'aktif')
             ->whereDoesntHave('transactions', function($q) use ($today) {
                 $q->where('bulan_pembayaran', $today->format('Y-m'))
                   ->where('status', 'settlement');

@@ -153,16 +153,7 @@ class TransactionController extends Controller
             Log::info("Transaction found in database. Current status: {$transaction->status}");
             Log::info("User email: {$transaction->user->email}");
 
-            // Update transaction details
-            $transaction->update([
-                'transaction_id' => $notification->transaction_id,
-                'payment_type' => $notification->payment_type,
-                'transaction_time' => $notification->transaction_time,
-            ]);
-            
-            Log::info("Transaction details updated");
-            
-            // Validate signature
+            // Validate signature FIRST (SEBELUM UPDATE DATABASE)
             $serverKey = config('midtrans.server_key');
             $hashed = hash('sha512', $notification->order_id . $notification->status_code . $notification->gross_amount . $serverKey);
             
@@ -174,6 +165,15 @@ class TransactionController extends Controller
             }
             
             Log::info("Signature validation passed");
+
+            // Update transaction details
+            $transaction->update([
+                'transaction_id' => $notification->transaction_id,
+                'payment_type' => $notification->payment_type,
+                'transaction_time' => $notification->transaction_time,
+            ]);
+            
+            Log::info("Transaction details updated");
             
             // Handle transaction status
             if ($transactionStatus == 'capture') {

@@ -34,8 +34,9 @@ class KabupatenController extends Controller
 
     public function laporan()
     {
-        // Ambil SEMUA transaksi yang sudah settlement dari SEMUA kabupaten
+        // Ambil transaksi yang sudah settlement HANYA untuk kabupaten yang login
         $transactions = \App\Models\Transaction::with('user')
+            ->where('user_id', Auth::id())
             ->where('status', 'settlement')
             ->get();
         
@@ -104,7 +105,10 @@ class KabupatenController extends Controller
      */
     public function showTransaction($id)
     {
-        $transaction = \App\Models\Transaction::findOrFail($id);
+        // Pastikan transaksi yang dibuka adalah milik user yang sedang login
+        $transaction = \App\Models\Transaction::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
         return Inertia::render('kabupaten/iuran/show', [
             'transaction' => $transaction,
