@@ -12,9 +12,11 @@ class LaporanController extends Controller
     public function index()
     {
         // Get all settled transactions with user relationship
-        // bulan_pembayaran is included by default via the model
+        // Dibatasi hanya untuk tahun berjalan agar server tidak berat (Scalability fix)
+        $currentYear = date('Y');
         $iuran = Transaction::with('user')
             ->where('status', 'settlement')
+            ->whereYear('created_at', $currentYear)
             ->get();
         
         // Get all kabupaten users

@@ -92,31 +92,16 @@ class NotifikasiController extends Controller
 
     public function markAsRead($id)
     {
-        $notifikasi = Transaction::findOrFail($id);
-
-        $notifikasi->status = 'settlement';
-        $notifikasi->settlement_time = now();
-        $notifikasi->save();
-
-        return redirect()->back()->with('success', 'Transaksi telah dikonfirmasi (settlement).');
+        return redirect()->back()->with('error', 'Aksi dinonaktifkan. Status pembayaran dikelola sepenuhnya secara otomatis oleh sistem Midtrans.');
     }
 
     public function markAsCancel($id)
     {
-        $notifikasi = Transaction::findOrFail($id);
-
-        $notifikasi->status = 'cancel';
-        $notifikasi->save();
-
-        return redirect()->back()->with('success', 'Transaksi telah dibatalkan.');
+        return redirect()->back()->with('error', 'Aksi dinonaktifkan. Pembatalan hanya dapat dilakukan otomatis oleh Midtrans.');
     }
 
     public function markAllAsRead()
     {
-        // Approve all pending transactions
-        Transaction::where('status', 'pending')
-            ->update(['status' => 'settlement']);
-
-        return back()->with('success', 'Semua transaksi pending berhasil di-ACC (settlement)');
+        return back()->with('error', 'Aksi dinonaktifkan. Anda tidak dapat menyetujui transaksi pending secara manual demi keamanan sistem keuangan.');
     }
 }

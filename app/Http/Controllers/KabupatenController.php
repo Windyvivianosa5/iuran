@@ -68,8 +68,8 @@ class KabupatenController extends Controller
             ];
         });
 
-        // Kabupaten list untuk filter
-        $kabupatens = \App\Models\User::where('role', 'kabupaten')
+        // Kabupaten list untuk filter (Hanya kirim data diri sendiri untuk mencegah kebocoran privasi)
+        $kabupatens = \App\Models\User::where('id', Auth::id())
             ->select('id', 'nama_kabupaten', 'jumlah_anggota')
             ->get();
 
