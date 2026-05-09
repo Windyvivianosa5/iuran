@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use App\Mail\PaymentSuccessNotification;
 use App\Mail\PaymentReceivedNotification;
 use Midtrans\Config;
@@ -62,7 +63,7 @@ class TransactionController extends Controller
             
 
             
-            $orderId = 'TRX-' . $user->id . '-' . time();
+            $orderId = 'TRX-' . $user->id . '-' . strtoupper(Str::random(10));
 
             // Create transaction record
             $transaction = Transaction::create([
@@ -115,7 +116,7 @@ class TransactionController extends Controller
             
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat transaksi: ' . $e->getMessage(),
+                'message' => 'Gagal membuat transaksi. Terjadi kesalahan pada server.',
             ], 500);
         }
     }
@@ -138,11 +139,9 @@ class TransactionController extends Controller
                 return response()->json(['success' => true, 'message' => 'empty body'], 200);
             }
 
-            $notification = new Notification();
-
-            $transactionStatus = $notification->transaction_status;
-            $orderId = $notification->order_id;
-            $fraudStatus = $notification->fraud_status ?? null;
+            $transactionStatus = $request->transaction_status;
+            $orderId = $request->order_id;
+            $fraudStatus = $request->fraud_status ?? null;
 
             Log::info("Processing webhook for Order ID: {$orderId}");
             Log::info("Transaction Status: {$transactionStatus}");
@@ -155,12 +154,12 @@ class TransactionController extends Controller
 
             // Validate signature FIRST (SEBELUM UPDATE DATABASE)
             $serverKey = config('midtrans.server_key');
-            $hashed = hash('sha512', $notification->order_id . $notification->status_code . $notification->gross_amount . $serverKey);
+            $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
             
-            if ($notification->signature_key !== $hashed) {
-                Log::warning('Invalid Midtrans signature for order: ' . $notification->order_id);
+            if ($request->signature_key !== $hashed) {
+                Log::warning('Invalid Midtrans signature for order: ' . $request->order_id);
                 Log::warning('Expected: ' . $hashed);
-                Log::warning('Received: ' . $notification->signature_key);
+                Log::warning('Received: ' . $request->signature_key);
                 return response()->json(['success' => false, 'message' => 'Invalid signature'], 403);
             }
             
@@ -168,9 +167,9 @@ class TransactionController extends Controller
 
             // Update transaction details
             $transaction->update([
-                'transaction_id' => $notification->transaction_id,
-                'payment_type' => $notification->payment_type,
-                'transaction_time' => $notification->transaction_time,
+                'transaction_id' => $request->transaction_id,
+                'payment_type' => $request->payment_type,
+                'transaction_time' => $request->transaction_time,
             ]);
             
             Log::info("Transaction details updated");
@@ -266,7 +265,7 @@ class TransactionController extends Controller
             Log::error('Error Line: ' . $e->getLine());
             Log::error('Stack Trace: ' . $e->getTraceAsString());
             // Return 200 agar Midtrans tidak retry terus-menerus
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 200);
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan internal server'], 200);
         }
     }
 

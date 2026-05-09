@@ -14,8 +14,10 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-// Midtrans webhook (public route - tanpa auth agar Midtrans bisa POST)
-Route::post('/midtrans/notification', [TransactionController::class, 'notification'])->name('midtrans.notification');
+// Midtrans webhook (public route - tanpa auth agar Midtrans bisa POST, tapi dibatasi 60 request/menit)
+Route::post('/midtrans/notification', [TransactionController::class, 'notification'])
+    ->middleware('throttle:60,1')
+    ->name('midtrans.notification');
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
