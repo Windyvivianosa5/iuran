@@ -14,6 +14,13 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
+// TODO: Hapus route ini setelah dijalankan di hosting
+Route::get('/run-migration-now', function () {
+    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    return "Cache cleared & Migrasi berhasil: " . \Illuminate\Support\Facades\Artisan::output();
+});
+
 // Midtrans webhook (public route - tanpa auth agar Midtrans bisa POST, tapi dibatasi 60 request/menit)
 Route::post('/midtrans/notification', [TransactionController::class, 'notification'])
     ->middleware('throttle:60,1')
