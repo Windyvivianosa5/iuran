@@ -14,6 +14,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import axios from 'axios';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -109,6 +110,25 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
         setIsProcessing(false);
       }
     });
+  };
+
+  const handleCancelTransaction = async (orderId: string) => {
+    if (!confirm('Apakah Anda yakin ingin membatalkan transaksi ini? Anda harus membuat tagihan baru nanti.')) return;
+    
+    setIsProcessing(true);
+    try {
+      const response = await axios.post(`/kabupaten/transaction/${orderId}/cancel`);
+      if (response.data.success) {
+        toast.success(response.data.message);
+        router.reload();
+      } else {
+        toast.error(response.data.message || 'Gagal membatalkan transaksi');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Terjadi kesalahan jaringan');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const getPaymentStatusBadge = (status: string) => {
@@ -218,15 +238,26 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           {transaction.status === 'pending' && transaction.snap_token && (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              className="gap-1.5 bg-yellow-600 hover:bg-yellow-700"
-                              onClick={() => handleContinuePayment(transaction)}
-                              disabled={isProcessing}
-                            >
-                              Lanjutkan Bayar
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => handleCancelTransaction(transaction.order_id)}
+                                disabled={isProcessing}
+                              >
+                                Batal
+                              </Button>
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="gap-1.5 bg-yellow-600 hover:bg-yellow-700"
+                                onClick={() => handleContinuePayment(transaction)}
+                                disabled={isProcessing}
+                              >
+                                Lanjutkan Bayar
+                              </Button>
+                            </>
                           )}
                           <Link href={`/kabupaten/dashboard/iuran/${transaction.id}`}>
                             <Button variant="ghost" size="sm" className="gap-1.5">

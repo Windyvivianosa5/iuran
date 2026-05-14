@@ -76,8 +76,10 @@ export function generateLaporan(data: any[], kabupatens: any[] = [], tahun = new
 
         const bulanKey = bulanMap[bulanIndex];
 
-        // Gunakan gross_amount (midtrans) atau jumlah (legacy)
-        const jumlah = parseFloat(item.gross_amount || item.jumlah);
+        // Gunakan gross_amount (midtrans) dikurangi admin_fee, atau jumlah (legacy)
+        const grossAmount = parseFloat(item.gross_amount || item.jumlah || 0);
+        const adminFee = parseFloat(item.admin_fee || 0);
+        const jumlah = grossAmount - adminFee;
 
         if (!result[kabupatenName]) {
             result[kabupatenName] = {

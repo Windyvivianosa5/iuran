@@ -19,7 +19,9 @@ class DashboardAdminController extends Controller
             ->get();
 
         // Calculate total contributions and transaction count
-        $totalMasuk = $transactions->sum('gross_amount');
+        $totalMasuk = $transactions->sum(function($t) {
+            return $t->gross_amount - ($t->admin_fee ?? 0);
+        });
         $jumlahTransaksi = $transactions->count();
 
         // Fetch all kabupaten users from database (dynamic)
@@ -49,7 +51,7 @@ class DashboardAdminController extends Controller
             return [
                 'bulan' => $bulanLabel,
                 'kabupaten' => $formattedName,
-                'total_iuran' => $item->gross_amount,
+                'total_iuran' => $item->gross_amount - ($item->admin_fee ?? 0),
             ];
         });
 
@@ -78,7 +80,9 @@ class DashboardAdminController extends Controller
             ->map(function ($group, $bulanIndex) {
                 return [
                     'bulan' => \Carbon\Carbon::create()->month($bulanIndex)->locale('id')->isoFormat('MMMM'),
-                    'total_iuran' => (float) $group->sum('gross_amount'),
+                    'total_iuran' => (float) $group->sum(function($t) {
+                        return $t->gross_amount - ($t->admin_fee ?? 0);
+                    }),
                 ];
             })
             ->sortKeys()
@@ -87,7 +91,7 @@ class DashboardAdminController extends Controller
         // Ambil data transaksi yang sudah ada di database
         $existingTransactions = Transaction::select(
             'user_id',
-            DB::raw('SUM(gross_amount) as total_iuran'),
+            DB::raw('SUM(gross_amount - IFNULL(admin_fee, 0)) as total_iuran'),
             DB::raw('COUNT(*) as jumlah_transaksi')
         )
             ->with('user')

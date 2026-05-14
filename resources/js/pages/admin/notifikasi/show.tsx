@@ -9,20 +9,20 @@ export default function Show() {
     const statusBadge = (status: string) => {
         if (status === 'diterima') {
             return (
-                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700">
-                    Disetujui
+                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-700 border border-green-200">
+                    Berhasil
                 </span>
             );
         } else if (status === 'ditolak') {
             return (
-                <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700">
-                    Ditolak
+                <span className="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-700 border border-red-200">
+                    Dibatalkan/Ditolak
                 </span>
             );
         } else {
             return (
-                <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
-                    Menunggu Verifikasi
+                <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700 border border-yellow-200">
+                    Menunggu Pembayaran
                 </span>
             );
         }

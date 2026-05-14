@@ -68,6 +68,7 @@ Route::middleware(['auth', 'verified','role:kabupaten'])->group(function () {
     // Transaction routes for Midtrans
     Route::post('/kabupaten/transaction/create', [TransactionController::class, 'create'])->name('transaction.create');
     Route::get('/kabupaten/transaction/status/{orderId}', [TransactionController::class, 'checkStatus'])->name('transaction.status');
+    Route::post('/kabupaten/transaction/{orderId}/cancel', [TransactionController::class, 'cancelTransaction'])->name('transaction.cancel');
     Route::get('/kabupaten/transactions', [TransactionController::class, 'index'])->name('transaction.index');
 });
 

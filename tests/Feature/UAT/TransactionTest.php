@@ -29,7 +29,8 @@ class TransactionTest extends TestCase
         $response = $this->actingAs($user)->postJson('/kabupaten/transaction/create', [
             'amount' => 500000,
             'description' => 'Iuran Bulan Ini',
-            'bulan_pembayaran' => '2024-05'
+            'bulan_pembayaran' => '2024-05',
+            'payment_method' => 'virtual_account'
         ]);
 
         // Pastikan sukses dan mereturn token
@@ -39,10 +40,10 @@ class TransactionTest extends TestCase
                 'snap_token' => 'mocked-snap-token',
             ]);
 
-        // Pastikan data tersimpan di database
+        // Pastikan data tersimpan di database (dengan tambahan biaya admin VA Rp 4.000)
         $this->assertDatabaseHas('transactions', [
             'user_id' => $user->id,
-            'gross_amount' => 500000,
+            'gross_amount' => 504000,
             'bulan_pembayaran' => '2024-05',
             'status' => 'pending',
         ]);
@@ -59,7 +60,8 @@ class TransactionTest extends TestCase
         $response = $this->actingAs($user)->postJson('/kabupaten/transaction/create', [
             'amount' => 500000,
             'description' => 'Iuran Bulan Ini',
-            'bulan_pembayaran' => '2024-05'
+            'bulan_pembayaran' => '2024-05',
+            'payment_method' => 'virtual_account'
         ]);
 
         // Pastikan ditolak dengan status 403 Forbidden
@@ -90,7 +92,8 @@ class TransactionTest extends TestCase
         $response = $this->actingAs($user)->postJson('/kabupaten/transaction/create', [
             'amount' => 500000,
             'description' => 'Iuran Bulan Ini',
-            'bulan_pembayaran' => '2024-05'
+            'bulan_pembayaran' => '2024-05',
+            'payment_method' => 'qris'
         ]);
 
         // Pastikan ditolak karena dicegah oleh sistem (422 Unprocessable Entity)

@@ -34,6 +34,7 @@ class TransactionController extends Controller
             'amount' => 'required|numeric|min:1000',
             'description' => 'nullable|string|max:255',
             'bulan_pembayaran' => ['required', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+            'payment_method' => 'required|in:virtual_account,qris',
         ]);
 
         try {
@@ -48,7 +49,6 @@ class TransactionController extends Controller
             }
             
             // Mencegah pembuatan double data invoice (Pending) untuk bulan yang sama.
-            // Namun tetap mengizinkan sukses bayar (Settlement) berkali-kali untuk sistem mencicil/mengangsur.
             $existingPending = Transaction::where('user_id', $user->id)
                 ->where('bulan_pembayaran', $request->bulan_pembayaran)
                 ->where('status', 'pending')
@@ -61,15 +61,27 @@ class TransactionController extends Controller
                 ], 422);
             }
             
-
-            
             $orderId = 'TRX-' . $user->id . '-' . strtoupper(Str::random(10));
+
+            // Hitung Pajak Berdasarkan Metode Pembayaran (Biaya Midtrans)
+            if ($request->payment_method === 'qris') {
+                $taxAmount = (int) round($request->amount * 0.007); // 0.7%
+                $taxName = 'Biaya Midtrans (QRIS 0.7%)';
+                $enabledPayments = ['qris', 'gopay', 'shopeepay'];
+            } else {
+                $taxAmount = 4000; // Rp 4.000 per transaksi
+                $taxName = 'Biaya Midtrans (Virtual Account)';
+                $enabledPayments = ['bca_va', 'bni_va', 'bri_va', 'mandiri_va', 'permata_va', 'other_va', 'echannel']; // echannel = mandiri bill
+            }
+
+            $grossAmount = $request->amount + $taxAmount;
 
             // Create transaction record
             $transaction = Transaction::create([
                 'user_id' => $user->id,
                 'order_id' => $orderId,
-                'gross_amount' => $request->amount,
+                'gross_amount' => $grossAmount,
+                'admin_fee' => $taxAmount,
                 'description' => $request->description ?? 'Pembayaran Iuran PGRI',
                 'bulan_pembayaran' => $request->bulan_pembayaran,
                 'status' => 'pending',
@@ -79,7 +91,7 @@ class TransactionController extends Controller
             $params = [
                 'transaction_details' => [
                     'order_id' => $orderId,
-                    'gross_amount' => $request->amount,
+                    'gross_amount' => $grossAmount,
                 ],
                 'customer_details' => [
                     'first_name' => $user->name,
@@ -92,7 +104,14 @@ class TransactionController extends Controller
                         'quantity' => 1,
                         'name' => $request->description ?? 'Iuran PGRI',
                     ],
+                    [
+                        'id' => 'FEE-001',
+                        'price' => $taxAmount,
+                        'quantity' => 1,
+                        'name' => $taxName,
+                    ],
                 ],
+                'enabled_payments' => $enabledPayments,
                 'callbacks' => [
                     'finish' => url('/kabupaten/dashboard/iuran'),
                     'unfinish' => url('/kabupaten/dashboard/iuran'),
@@ -304,5 +323,39 @@ class TransactionController extends Controller
             'success' => true,
             'transactions' => $transactions,
         ]);
+    }
+
+    /**
+     * Cancel a pending transaction
+     */
+    public function cancelTransaction($orderId)
+    {
+        try {
+            $transaction = Transaction::where('order_id', $orderId)
+                ->where('user_id', Auth::id())
+                ->where('status', 'pending')
+                ->firstOrFail();
+
+            // Cancel at Midtrans
+            try {
+                \Midtrans\Transaction::cancel($orderId);
+            } catch (\Exception $e) {
+                // Ignore if it's already expired or not found in midtrans
+                Log::warning('Midtrans cancel error: ' . $e->getMessage());
+            }
+
+            // Update local DB
+            $transaction->update(['status' => 'cancel']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Transaksi berhasil dibatalkan.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaksi tidak ditemukan atau tidak dapat dibatalkan.'
+            ], 400);
+        }
     }
 }
