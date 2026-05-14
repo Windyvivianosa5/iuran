@@ -47,7 +47,8 @@ class KabupatenController extends Controller
                 'id' => $transaction->id,
                 'kabupaten_id' => $transaction->user_id,
                 'gross_amount' => $transaction->gross_amount,
-                'jumlah' => $transaction->gross_amount,
+                'jumlah' => $transaction->gross_amount - ($transaction->admin_fee ?? 0),
+                'admin_fee' => $transaction->admin_fee,
                 'bulan_pembayaran' => $transaction->bulan_pembayaran,
                 'tanggal' => $transaction->transaction_time ? $transaction->transaction_time->format('Y-m-d') : $transaction->created_at->format('Y-m-d'),
                 'settlement_time' => $transaction->settlement_time ? $transaction->settlement_time->format('Y-m-d H:i:s') : null,
@@ -87,7 +88,9 @@ class KabupatenController extends Controller
             ->map(function ($group, $bulanIndex) {
                 return [
                     'bulan' => Carbon::create()->month($bulanIndex)->locale('id')->isoFormat('MMMM'),
-                    'total_iuran' => (float) $group->sum('gross_amount'),
+                    'total_iuran' => (float) $group->sum(function ($item) {
+                        return $item->gross_amount - ($item->admin_fee ?? 0);
+                    }),
                 ];
             })
             ->sortKeys()
