@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('order_id')->unique();
             $table->string('transaction_id')->nullable();
             $table->integer('gross_amount');
-            $table->integer('admin_fee')->nullable();
             $table->string('payment_type')->nullable();
             $table->string('payment_method')->nullable();
             $table->enum('status', ['pending', 'settlement', 'cancel', 'deny', 'expire', 'failure'])->default('pending');
