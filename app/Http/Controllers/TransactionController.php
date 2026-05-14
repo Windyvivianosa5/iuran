@@ -131,11 +131,11 @@ class TransactionController extends Controller
                 'order_id' => $orderId,
             ]);
         } catch (\Exception $e) {
-            Log::error('Transaction creation failed: ' . $e->getMessage());
+            Log::error('Transaction creation failed: ' . $e->getMessage() . ' di baris ' . $e->getLine());
             
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat transaksi. Terjadi kesalahan pada server.',
+                'message' => 'Gagal membuat transaksi: ' . $e->getMessage(),
             ], 500);
         }
     }
