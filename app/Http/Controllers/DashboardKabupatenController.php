@@ -24,7 +24,9 @@ class DashboardKabupatenController extends Controller
             ->latest()
             ->get();
 
-        $totalMasuk = $settledTransactions->sum('gross_amount');
+        $totalMasuk = $settledTransactions->sum(function ($t) {
+            return $t->gross_amount - ($t->admin_fee ?? 0);
+        });
         $jumlahTransaksi = $settledTransactions->count();
 
         $transaksiTerbaru = $settledTransactions->take(5)->map(function ($item) use ($kotaList) {
