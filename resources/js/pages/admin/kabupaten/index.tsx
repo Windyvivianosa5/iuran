@@ -52,6 +52,14 @@ export default function KelolaKabupaten({ kabupaten }: any) {
         }
     };
 
+    const handleSendReminder = (id: number) => {
+        if (confirm('Apakah Anda yakin ingin mengirim email pengingat ke kabupaten ini?')) {
+            router.post(route('admin.dashboard.kabupaten.sendReminder', id), {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+
     return (
         <AppAdminLayout breadcrumbs={breadcrumbs}>
             <Head title="Kelola Kabupaten" />
@@ -184,6 +192,12 @@ export default function KelolaKabupaten({ kabupaten }: any) {
                                                                 <Link href={route('admin.dashboard.kabupaten.edit', item.id)}>
                                                                     Edit
                                                                 </Link>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                onClick={() => handleSendReminder(item.id)}
+                                                                className="text-blue-600"
+                                                            >
+                                                                Kirim Pengingat
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() => handleDelete(item.id)}

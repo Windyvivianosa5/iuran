@@ -170,4 +170,21 @@ class KabupatenController extends Controller
                 ->with('error', 'Gagal menghapus kabupaten: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Send payment reminder to the specified kabupaten.
+     */
+    public function sendReminder(User $kabupaten)
+    {
+        try {
+            \Mail::to($kabupaten->email)->send(new \App\Mail\PaymentReminderMail($kabupaten));
+            return redirect()->back()->with('success', 'Email pengingat berhasil dikirim ke ' . $kabupaten->nama_kabupaten);
+        } catch (\Exception $e) {
+            \Log::error('Error sending reminder email', [
+                'error' => $e->getMessage(),
+                'kabupaten_id' => $kabupaten->id
+            ]);
+            return redirect()->back()->with('error', 'Gagal mengirim email pengingat: ' . $e->getMessage());
+        }
+    }
 }

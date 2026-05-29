@@ -59,6 +59,7 @@ Route::middleware(['auth', 'verified','role:admin'])->group(function () {
     Route::get('admin/dashboard/kabupaten/{kabupaten}/edit', [\App\Http\Controllers\Admin\KabupatenController::class, 'edit'])->name('admin.dashboard.kabupaten.edit');
     Route::put('admin/dashboard/kabupaten/{kabupaten}', [\App\Http\Controllers\Admin\KabupatenController::class, 'update'])->name('admin.dashboard.kabupaten.update');
     Route::delete('admin/dashboard/kabupaten/{kabupaten}', [\App\Http\Controllers\Admin\KabupatenController::class, 'destroy'])->name('admin.dashboard.kabupaten.destroy');
+    Route::post('admin/dashboard/kabupaten/{kabupaten}/send-reminder', [\App\Http\Controllers\Admin\KabupatenController::class, 'sendReminder'])->name('admin.dashboard.kabupaten.sendReminder');
 
 });
 
