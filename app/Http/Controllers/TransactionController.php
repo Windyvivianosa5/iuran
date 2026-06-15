@@ -235,7 +235,7 @@ class TransactionController extends Controller
                     // Send success email to user (Kabupaten)
                     Log::info("Attempting to send email to user: {$transaction->user->email}");
                     
-                    Mail::to($transaction->user->email)->queue(
+                    Mail::to($transaction->user->email)->send(
                         new PaymentSuccessNotification($transaction)
                     );
                     
@@ -245,7 +245,7 @@ class TransactionController extends Controller
                     $adminEmail = config('mail.admin_email', env('ADMIN_EMAIL', 'admin@pgri-riau.id'));
                     Log::info("Attempting to send email to admin: {$adminEmail}");
                     
-                    Mail::to($adminEmail)->queue(
+                    Mail::to($adminEmail)->send(
                         new PaymentReceivedNotification($transaction)
                     );
                     
