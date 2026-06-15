@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         
         $middleware->alias([
-            "role"=> handleRole::class
+            "role"=> HandleRole::class
         ]);
         $middleware->web(append: [
             HandleAppearance::class,

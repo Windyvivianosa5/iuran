@@ -14,12 +14,13 @@ Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-// TODO: Hapus route ini setelah dijalankan di hosting
-Route::get('/run-migration-now', function () {
-    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    return "Cache cleared & Migrasi berhasil: " . \Illuminate\Support\Facades\Artisan::output();
-});
+// DIHAPUS: Route ini berbahaya karena tanpa autentikasi.
+// Gunakan `php artisan migrate` via terminal sebagai gantinya.
+// Route::get('/run-migration-now', function () {
+//     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+//     \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+//     return "Cache cleared & Migrasi berhasil: " . \Illuminate\Support\Facades\Artisan::output();
+// });
 
 // Midtrans webhook (public route - tanpa auth agar Midtrans bisa POST, tapi dibatasi 60 request/menit)
 Route::post('/midtrans/notification', [TransactionController::class, 'notification'])

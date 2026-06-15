@@ -45,7 +45,7 @@ class DashboardKabupatenController extends Controller
             return [
                 'bulan' => $bulanLabel,
                 'kabupaten' => $formattedName,
-                'total_iuran' => $item->gross_amount,
+                'total_iuran' => $item->gross_amount - ($item->admin_fee ?? 0),
             ];
         });
 
@@ -65,6 +65,7 @@ class DashboardKabupatenController extends Controller
         // Laporan bulanan — prioritaskan bulan_pembayaran, fallback ke settlement_time
         $laporans = Transaction::where('user_id', $user->id)
             ->where('status', 'settlement')
+            ->where('bulan_pembayaran', 'like', $currentYear.'-%')
             ->get()
             ->groupBy(function ($item) {
                 // Gunakan bulan dari bulan_pembayaran jika ada, else dari settlement_time

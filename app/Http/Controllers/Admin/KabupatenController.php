@@ -70,7 +70,7 @@ class KabupatenController extends Controller
             $user = User::create([
                 'name' => $validated['nama_kabupaten'],
                 'email' => $validated['user_email'],
-                'password' => \Hash::make($validated['user_password']),
+                'password' => $validated['user_password'],
                 'role' => 'kabupaten',
                 'nama_kabupaten' => $validated['nama_kabupaten'],
                 'kode_kabupaten' => $validated['kode_kabupaten'],

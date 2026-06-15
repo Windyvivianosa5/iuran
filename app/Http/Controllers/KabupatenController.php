@@ -78,6 +78,7 @@ class KabupatenController extends Controller
         // Prioritaskan bulan_pembayaran, fallback ke settlement_time/created_at
         $laporans = \App\Models\Transaction::where('user_id', Auth::id())
             ->where('status', 'settlement')
+            ->where('bulan_pembayaran', 'like', date('Y').'-%')
             ->get()
             ->groupBy(function ($item) {
                 if ($item->bulan_pembayaran) {

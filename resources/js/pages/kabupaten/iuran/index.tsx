@@ -88,24 +88,24 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
 
     // @ts-ignore
     window.snap.pay(transaction.snap_token, {
-      onSuccess: function(result: any) {
+      onSuccess: function (result: any) {
         console.log('Payment success:', result);
         toast.success('Pembayaran berhasil!');
         setTimeout(() => {
           router.reload();
         }, 1500);
       },
-      onPending: function(result: any) {
+      onPending: function (result: any) {
         console.log('Payment pending:', result);
         toast.info('Pembayaran sedang diproses');
         setIsProcessing(false);
       },
-      onError: function(result: any) {
+      onError: function (result: any) {
         console.log('Payment error:', result);
         toast.error('Pembayaran gagal');
         setIsProcessing(false);
       },
-      onClose: function() {
+      onClose: function () {
         console.log('Payment popup closed');
         setIsProcessing(false);
       }
@@ -114,7 +114,7 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
 
   const handleCancelTransaction = async (orderId: string) => {
     if (!confirm('Apakah Anda yakin ingin membatalkan transaksi ini? Anda harus membuat tagihan baru nanti.')) return;
-    
+
     setIsProcessing(true);
     try {
       const response = await axios.post(`/kabupaten/transaction/${orderId}/cancel`);
@@ -140,9 +140,9 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
       expire: { color: 'bg-gray-100 text-gray-800 border-gray-300', text: 'Kadaluarsa' },
       failure: { color: 'bg-red-100 text-red-800 border-red-300', text: 'Gagal' },
     };
-    
+
     const badge = badges[status] || { color: 'bg-gray-100 text-gray-800 border-gray-300', text: status };
-    
+
     return (
       <div className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${badge.color}`}>
         {badge.text}
@@ -158,23 +158,23 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
           <div>
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Daftar Transaksi Pembayaran</h1>
           </div>
-         {
-          isActive === "aktif" ? (
-            <Link href="iuran/create">
-              <Button variant="default" className="bg-gradient-to-r from-blue-600 to-blue-700 shadow hover:from-blue-700 hover:to-blue-800">
-                Bayar Iuran
+          {
+            isActive === "aktif" ? (
+              <Link href="iuran/create">
+                <Button variant="default" className="bg-gradient-to-r from-blue-600 to-blue-700 shadow hover:from-blue-700 hover:to-blue-800">
+                  Bayar Iuran
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                variant="default"
+                className="bg-gray-400 cursor-not-allowed opacity-60 dark:bg-gray-600 dark:text-gray-300"
+                onClick={() => toast.error('Akun tidak aktif, Hubungi Admin')}
+              >
+                Akun Tidak Aktif
               </Button>
-            </Link>
-          ) : (
-            <Button 
-              variant="default" 
-              className="bg-gray-400 cursor-not-allowed opacity-60 dark:bg-gray-600 dark:text-gray-300"
-              onClick={() => toast.error('Akun tidak aktif, Hubungi Admin')}
-            >
-              Akun Tidak Aktif
-            </Button>
-          )
-         }
+            )
+          }
         </div>
 
         {/* Info Box */}

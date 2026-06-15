@@ -69,7 +69,9 @@ class DashboardAdminController extends Controller
         });
 
         // Fetch monthly contribution report — prioritaskan bulan_pembayaran
+        $currentYear = date('Y');
         $laporans = Transaction::where('status', 'settlement')
+            ->where('bulan_pembayaran', 'like', $currentYear.'-%')
             ->get()
             ->groupBy(function ($item) {
                 if ($item->bulan_pembayaran) {
@@ -91,7 +93,7 @@ class DashboardAdminController extends Controller
         // Ambil data transaksi yang sudah ada di database
         $existingTransactions = Transaction::select(
             'user_id',
-            DB::raw('SUM(gross_amount - IFNULL(admin_fee, 0)) as total_iuran'),
+            DB::raw('SUM(gross_amount - COALESCE(admin_fee, 0)) as total_iuran'),
             DB::raw('COUNT(*) as jumlah_transaksi')
         )
             ->with('user')

@@ -16,7 +16,7 @@ class LaporanController extends Controller
         $currentYear = date('Y');
         $iuran = Transaction::with('user')
             ->where('status', 'settlement')
-            ->whereYear('created_at', $currentYear)
+            ->where('bulan_pembayaran', 'like', $currentYear.'-%')
             ->get();
         
         // Get all kabupaten users
