@@ -65,7 +65,7 @@ class DashboardKabupatenController extends Controller
         // Laporan bulanan — prioritaskan bulan_pembayaran, fallback ke settlement_time
         $laporans = Transaction::where('user_id', $user->id)
             ->where('status', 'settlement')
-            ->where('bulan_pembayaran', 'like', $currentYear.'-%')
+            ->where('bulan_pembayaran', 'like', date('Y').'-%')
             ->get()
             ->groupBy(function ($item) {
                 // Gunakan bulan dari bulan_pembayaran jika ada, else dari settlement_time
