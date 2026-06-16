@@ -13,6 +13,7 @@ use App\Mail\PaymentReceivedNotification;
 use Midtrans\Config;
 use Midtrans\Snap;
 use Midtrans\Notification;
+use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
@@ -23,6 +24,15 @@ class TransactionController extends Controller
         Config::$isProduction = config('midtrans.is_production');
         Config::$isSanitized = config('midtrans.is_sanitized');
         Config::$is3ds = config('midtrans.is_3ds');
+        
+        // Fix for local development SSL issue
+        if (app()->environment('local')) {
+            Config::$curlOptions = [
+                CURLOPT_SSL_VERIFYHOST => 0,
+                CURLOPT_SSL_VERIFYPEER => 0,
+                CURLOPT_HTTPHEADER => ['X-Dummy-Header: true'], // Fix Midtrans SDK array key bug
+            ];
+        }
     }
 
     /**
@@ -34,7 +44,6 @@ class TransactionController extends Controller
             'amount' => 'required|numeric|min:1000',
             'description' => 'nullable|string|max:255',
             'bulan_pembayaran' => ['required', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
-            'payment_method' => 'required|in:virtual_account,qris',
         ]);
 
         try {
@@ -63,18 +72,13 @@ class TransactionController extends Controller
             
             $orderId = 'TRX-' . $user->id . '-' . strtoupper(Str::random(10));
 
-            // Hitung Pajak Berdasarkan Metode Pembayaran (Biaya Midtrans)
-            if ($request->payment_method === 'qris') {
-                $taxAmount = (int) round($request->amount * 0.007); // 0.7%
-                $taxName = 'Biaya Midtrans (QRIS 0.7%)';
-                $enabledPayments = ['qris', 'gopay', 'shopeepay'];
-            } else {
-                $taxAmount = 4000; // Rp 4.000 per transaksi
-                $taxName = 'Biaya Midtrans (Virtual Account)';
-                $enabledPayments = ['bca_va', 'bni_va', 'bri_va', 'mandiri_va', 'permata_va', 'other_va', 'echannel']; // echannel = mandiri bill
-            }
+            // Hitung Biaya Admin (Flat Fee)
+            $taxAmount = 4000; // Rp 4.000 per transaksi untuk semua metode pembayaran
+            $taxName = 'Biaya Admin / Layanan';
 
             $grossAmount = $request->amount + $taxAmount;
+
+            DB::beginTransaction();
 
             // Create transaction record
             $transaction = Transaction::create([
@@ -111,7 +115,14 @@ class TransactionController extends Controller
                         'name' => $taxName,
                     ],
                 ],
-                'enabled_payments' => $enabledPayments,
+                'enabled_payments' => [
+                    // Virtual Account
+                    'bca_va', 'bni_va', 'echannel', 'bri_va',
+                    // QRIS
+                    'qris',
+                    // E-Wallet / Dompet Digital
+                    'gopay', 'shopeepay',
+                ],
                 'callbacks' => [
                     'finish' => url('/kabupaten/dashboard/iuran'),
                     'unfinish' => url('/kabupaten/dashboard/iuran'),
@@ -125,12 +136,15 @@ class TransactionController extends Controller
             // Update transaction with snap token
             $transaction->update(['snap_token' => $snapToken]);
 
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'snap_token' => $snapToken,
                 'order_id' => $orderId,
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Transaction creation failed: ' . $e->getMessage() . ' di baris ' . $e->getLine());
             
             return response()->json([

@@ -56,7 +56,6 @@ export default function Create() {
     const [description, setDescription] = React.useState('');
     const [bulanPembayaran, setBulanPembayaran] = React.useState('');
     const [tahunPembayaran, setTahunPembayaran] = React.useState(new Date().getFullYear().toString());
-    const [paymentMethod, setPaymentMethod] = React.useState('virtual_account');
     const [isProcessing, setIsProcessing] = React.useState(false);
     const [paymentStatus, setPaymentStatus] = React.useState<'idle' | 'success' | 'pending' | 'failed'>('idle');
     const [configError, setConfigError] = React.useState(false);
@@ -154,7 +153,6 @@ export default function Create() {
                 amount: numericAmount,
                 description: description || `Iuran Bulan ${MONTHS.find(m => m.value === bulanPembayaran)?.label} ${tahunPembayaran}`,
                 bulan_pembayaran: getBulanPembayaranValue(),
-                payment_method: paymentMethod,
             }, {
                 headers: {
                     'Accept': 'application/json',
@@ -347,32 +345,6 @@ export default function Create() {
                                     className="min-h-[80px]"
                                 />
                                 <p className="text-xs text-gray-500">Opsional - Tambahkan catatan untuk pembayaran ini</p>
-                            </div>
-
-                            {/* Payment Method Selection */}
-                            <div className="grid gap-2">
-                                <Label className="text-base font-semibold">
-                                    Metode Pembayaran <span className="text-red-500">*</span>
-                                </Label>
-                                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                                    <SelectTrigger className="h-12 bg-white">
-                                        <SelectValue placeholder="Pilih Metode Pembayaran" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="virtual_account" className="py-3">
-                                            <div className="flex flex-col text-left">
-                                                <span className="font-semibold text-gray-900">Virtual Account / Transfer Bank</span>
-                                                <span className="text-xs text-gray-500">Biaya Layanan: Rp 4.000</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="qris" className="py-3">
-                                            <div className="flex flex-col text-left">
-                                                <span className="font-semibold text-gray-900">QRIS / E-Wallet</span>
-                                                <span className="text-xs text-gray-500">Biaya Layanan: 0,7% dari total iuran</span>
-                                            </div>
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
                             </div>
 
                             {/* Action Buttons */}
