@@ -122,6 +122,11 @@ export default function Create() {
     const handlePayment = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!amount || amount.trim() === '') {
+            toast.error('Nominal Iuran Wajib Diisi');
+            return;
+        }
+
         const numericAmount = parseNumber(amount);
         
         if (!numericAmount || numericAmount < 1000) {
@@ -290,7 +295,6 @@ export default function Create() {
                                         value={formatNumber(amount)}
                                         onChange={(e) => setAmount(e.currentTarget.value)}
                                         className="h-12 pl-12 text-lg font-semibold"
-                                        required
                                     />
                                 </div>
                                 <p className="text-xs text-gray-500">Minimal pembayaran Rp 1.000</p>
@@ -356,7 +360,7 @@ export default function Create() {
                                 </Link>
                                 <Button
                                     type="submit"
-                                    disabled={isProcessing || !amount || !bulanPembayaran || !tahunPembayaran}
+                                    disabled={isProcessing}
                                     className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 sm:w-auto"
                                 >
                                     {isProcessing ? (
