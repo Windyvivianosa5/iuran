@@ -30,6 +30,7 @@ export default function DashboardKabupaten() {
         namaUser,
         recentTransactions = [],
         midtransClientKey,
+        midtransIsProduction,
         unpaidMonths = []
     } = usePage().props as any;
 
@@ -44,12 +45,14 @@ export default function DashboardKabupaten() {
 
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+        script.src = midtransIsProduction 
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js';
         script.setAttribute('data-client-key', midtransClientKey);
         document.body.appendChild(script);
 
         // Tidak di-remove saat unmount agar snap.js tidak perlu dimuat ulang
-    }, [midtransClientKey]);
+    }, [midtransClientKey, midtransIsProduction]);
 
     const getStatusBadge = (status: string) => {
         const badges: Record<string, { color: string; text: string }> = {

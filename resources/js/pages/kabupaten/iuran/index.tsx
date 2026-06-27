@@ -27,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function DashboardKabupatenIuran({ transactions }: { transactions: any }) {
-  const { midtransClientKey, isActive } = usePage().props as any;
+  const { midtransClientKey, midtransIsProduction, isActive } = usePage().props as any;
   const [isProcessing, setIsProcessing] = React.useState(false);
 
   // Load Midtrans Snap script
@@ -42,11 +42,13 @@ export default function DashboardKabupatenIuran({ transactions }: { transactions
 
     const script = document.createElement('script');
     script.id = scriptId;
-    script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+    script.src = midtransIsProduction 
+      ? 'https://app.midtrans.com/snap/snap.js'
+      : 'https://app.sandbox.midtrans.com/snap/snap.js';
     script.setAttribute('data-client-key', midtransClientKey);
     document.body.appendChild(script);
 
-  }, [midtransClientKey]);
+  }, [midtransClientKey, midtransIsProduction]);
 
   const formatRupiah = (value: number) =>
     `Rp ${Number(value).toLocaleString('id-ID')}`;

@@ -32,6 +32,7 @@ declare global {
 // Define props interface
 interface PageProps {
     midtransClientKey: string;
+    midtransIsProduction?: boolean;
     [key: string]: any; // Index signature for Inertia compatibility
 }
 
@@ -51,7 +52,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Create() {
-    const { midtransClientKey, isActive } = usePage<PageProps>().props;
+    const { midtransClientKey, midtransIsProduction, isActive } = usePage<PageProps>().props;
     const [amount, setAmount] = React.useState('');
     const [description, setDescription] = React.useState('');
     const [bulanPembayaran, setBulanPembayaran] = React.useState('');
@@ -107,7 +108,9 @@ export default function Create() {
 
         const script = document.createElement('script');
         script.id = scriptId;
-        script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
+        script.src = midtransIsProduction 
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js';
         script.setAttribute('data-client-key', midtransClientKey);
         
         script.onerror = () => {
@@ -117,7 +120,7 @@ export default function Create() {
         document.body.appendChild(script);
 
         // Tidak perlu di-remove saat pindah halaman agar event listener Midtrans tidak bocor/berlipat
-    }, [midtransClientKey, isActive]);
+    }, [midtransClientKey, midtransIsProduction, isActive]);
 
     const handlePayment = async (e: React.FormEvent) => {
         e.preventDefault();
