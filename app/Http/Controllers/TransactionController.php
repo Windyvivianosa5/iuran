@@ -73,7 +73,7 @@ class TransactionController extends Controller
             $orderId = 'TRX-' . $user->id . '-' . strtoupper(Str::random(10));
 
             // Hitung Biaya Admin (Flat Fee)
-            $taxAmount = 10; // Rp 4.000 per transaksi untuk semua metode pembayaran
+            $taxAmount = (int) \App\Models\Setting::getValue('admin_fee', 4000);
             $taxName = 'Biaya Admin / Layanan';
 
             $grossAmount = $request->amount + $taxAmount;

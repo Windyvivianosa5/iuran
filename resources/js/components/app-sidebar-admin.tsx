@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookDown, Building2, Inbox, LayoutGrid } from 'lucide-react';
+import { BookDown, Building2, Inbox, LayoutGrid, Settings } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -26,7 +26,12 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Notifikasi',
         href: '/admin/dashboard/notifikasi',
-        icon: BookDown ,
+        icon: BookDown,
+    },
+    {
+        title: 'Pengaturan',
+        href: '/admin/dashboard/settings',
+        icon: Settings,
     },
 ];
 
